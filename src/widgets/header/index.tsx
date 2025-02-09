@@ -1,3 +1,4 @@
+// C:\Users\terec\super\nexpds2\src\widgets\header\index.tsx
 "use client";
 
 import { useRouter } from "next/navigation";

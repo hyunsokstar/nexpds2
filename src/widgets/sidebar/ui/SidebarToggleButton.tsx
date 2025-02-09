@@ -1,4 +1,3 @@
-// widgets/sidebar/ui/SidebarToggleButton.tsx
 "use client";
 
 import React from "react";
@@ -20,9 +19,10 @@ export function SidebarToggleButton({ isOpen, onClick }: SidebarToggleButtonProp
       <button
         onClick={onClick}
         className={cn(
-          "absolute top-3",
+          "absolute",
+          "top-36", // <-- 여기서 버튼을 더 아래로 내렸습니다.
           "flex items-center justify-center",
-          "w-4 h-16 bg-white",
+          "w-4 h-10 bg-white",
           "border border-gray-200 rounded-r",
           "hover:bg-gray-50 transition-colors",
           "focus:outline-none focus:ring-2 focus:ring-gray-200",
