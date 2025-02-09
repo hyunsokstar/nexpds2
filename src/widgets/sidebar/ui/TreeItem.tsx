@@ -1,0 +1,69 @@
+// widgets/sidebar/ui/TreeItem.tsx
+"use client";
+
+import { FolderIcon, FileIcon, ChevronDown, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
+import React from "react";
+
+interface TreeItemProps {
+  label: string;
+  level: number;
+  type: 'folder' | 'file';
+  isOpen?: boolean;
+  variant?: 'default' | 'blue' | 'red' | 'green';
+  onToggle?: () => void;
+}
+
+export function TreeItem({ 
+  label, 
+  level, 
+  type, 
+  isOpen = false, 
+  variant = 'default',
+  onToggle 
+}: TreeItemProps) {
+  const padding = level * 20; // 들여쓰기 간격 증가
+  
+  const getIcon = () => {
+    if (type === 'folder') return <FolderIcon className="w-4 h-4 text-yellow-500" />;
+    return <FileIcon className={cn(
+      "w-4 h-4",
+      variant === 'blue' && "text-blue-500",
+      variant === 'red' && "text-red-500",
+      variant === 'green' && "text-green-500"
+    )} />;
+  };
+
+  return (
+    <div
+      className={cn(
+        "flex items-center py-1.5 hover:bg-gray-100 cursor-pointer text-sm relative",
+        // 들여쓰기 라인 스타일
+        level > 0 && "border-l border-dashed border-gray-200 ml-3",
+      )}
+      style={{ 
+        paddingLeft: `${padding}px`,
+        // 마지막 아이템이 아닌 경우에만 하단 보더 추가
+        borderBottom: '1px solid #f5f5f5'
+      }}
+      onClick={onToggle}
+    >
+      {type === 'folder' && (
+        <div className="w-4 h-4 mr-1">
+          {isOpen ? (
+            <ChevronDown className="w-4 h-4" />
+          ) : (
+            <ChevronRight className="w-4 h-4" />
+          )}
+        </div>
+      )}
+      {getIcon()}
+      <span className={cn(
+        "ml-2",
+        type === 'folder' && "font-medium"
+      )}>
+        {label}
+      </span>
+    </div>
+  );
+}

@@ -1,35 +1,22 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+// app/layout.tsx
 import { Providers } from "@/shared/providers";
-import Header from "@/widgets/header";
+import "./globals.css";
+import { Inter } from "next/font/google";
+import { AppLayout } from "@/widgets/layout";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-export const metadata: Metadata = {
-  title: "Problem Bank",
-  description: "A platform for managing problem banks.",
+export const metadata = {
+  title: "NEXPDS",
+  description: "NEXPDS 시스템",
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+    <html lang="ko">
+      <body className={inter.className}>
         <Providers>
-          <Header />
-          <main className="container mx-auto pt-3">
-            {children}
-          </main>
+          <AppLayout>{children}</AppLayout>
         </Providers>
       </body>
     </html>

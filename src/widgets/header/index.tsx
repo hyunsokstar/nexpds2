@@ -2,61 +2,15 @@
 
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { useTabStore } from "@/store/tabStore";
-import { MenuItem, menuItems } from "@/widgets/header/model/menuItems";
 import React from "react";
-import CustomAlert from "@/shared/notice-message/CustomAlert";
 import { Button } from "@/shared/ui/button";
 import { MenuItemButton } from "@/widgets/header/components/MenuItemButton";
-
-const errorMessage = {
-  isOpen: false,
-  message: "",
-  title: "로그인",
-  type: "0",
-};
+import { useMenuStore } from "@/store/tabStore";
 
 export default function Header() {
   const router = useRouter();
-  const [alertState, setAlertState] = React.useState(errorMessage);
-
-  const {
-    addTab,
-    removeTab,
-    openedTabs,
-    duplicateTab,
-    activeTabId,
-    activeTabKey,
-    getTabCountById,
-    setCampaignIdForUpdateFromSideMenu,
-  } = useTabStore();
-
-  const handleMenuClick = (item: MenuItem, event: React.MouseEvent<HTMLButtonElement>) => {
-    if (event.ctrlKey) {
-      duplicateTab(item.id);
-    } else {
-      const existingTabs = openedTabs.filter((tab) => tab.id === item.id);
-      existingTabs.forEach((tab) => {
-        removeTab(tab.id, tab.uniqueKey);
-      });
-
-      const newTabKey = `${item.id}-${Date.now()}`;
-      addTab({
-        ...item,
-        uniqueKey: newTabKey,
-        content: item.content || null,
-      });
-    }
-    setCampaignIdForUpdateFromSideMenu(null);
-  };
-
-  const isTabOpened = (itemId: number) => {
-    return openedTabs.some((tab) => tab.id === itemId);
-  };
-
-  const isActiveTab = (itemId: number) => {
-    return openedTabs.some((tab) => tab.id === itemId && tab.id === activeTabId && tab.uniqueKey === activeTabKey);
-  };
+  const { activeId, setActiveMenu, getAllMenus } = useMenuStore();
+  const menuItems = getAllMenus();
 
   const handleLoginOut = () => {
     document.cookie = "session_key=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
@@ -64,8 +18,9 @@ export default function Header() {
   };
 
   return (
-    <div className="flex flex-col mx-1">
-      {/* 상단 바 */}
+    // 헤더 전체를 fixed로 잡고, 최상단(z-50)으로 올려줌
+    <div className="fixed top-0 left-0 w-full z-50">
+      {/* 상단 얇은 바 */}
       <div className="header-top bg-[#5BC2C1] h-[28px] flex items-center">
         <div className="px-4 flex justify-between items-center w-full">
           <div className="flex items-center">
@@ -87,33 +42,20 @@ export default function Header() {
         </div>
       </div>
 
-      {/* 헤더 네비게이션 */}
-      <header className="bg-white border-b mt-1 px-4">
-        <div className="flex items-center h-24">
-          <nav className="flex gap-2 overflow-x-auto py-2">
-            {menuItems.map((item) => (
-              <MenuItemButton
-                key={`menu-${item.id}`}
-                icon={item.icon}
-                title={item.title}
-                isActive={isActiveTab(item.id)}
-                isOpened={isTabOpened(item.id)}
-                count={getTabCountById(item.id)}
-                onClick={(e) => handleMenuClick(item, e)}
-              />
-            ))}
-          </nav>
-        </div>
+      {/* 메인 헤더 부분 */}
+      <header className="bg-white border-b px-4 h-24 flex items-center">
+        <nav className="flex gap-2 overflow-x-auto py-2">
+          {menuItems.map((item) => (
+            <MenuItemButton
+              key={`menu-${item.id}`}
+              icon={item.icon}
+              title={item.title}
+              isActive={activeId === item.id}
+              onClick={() => setActiveMenu(item.id)}
+            />
+          ))}
+        </nav>
       </header>
-
-      {/* 커스텀 알림 */}
-      <CustomAlert
-        message={alertState.message}
-        title={alertState.title}
-        type={alertState.type}
-        isOpen={alertState.isOpen}
-        onClose={() => setAlertState((prev) => ({ ...prev, isOpen: false }))}
-      />
     </div>
   );
 }
