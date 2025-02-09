@@ -22,7 +22,7 @@ export function TreeItem({
   variant = 'default',
   onToggle 
 }: TreeItemProps) {
-  const padding = level * 20; // 들여쓰기 간격 증가
+  const padding = level * 20;
   
   const getIcon = () => {
     if (type === 'folder') return <FolderIcon className="w-4 h-4 text-yellow-500" />;
@@ -38,14 +38,9 @@ export function TreeItem({
     <div
       className={cn(
         "flex items-center py-1.5 hover:bg-gray-100 cursor-pointer text-sm relative",
-        // 들여쓰기 라인 스타일
-        level > 0 && "border-l border-dashed border-gray-200 ml-3",
+        level > 0 && "ml-3"  // 내부 점선 제거, 들여쓰기만 유지
       )}
-      style={{ 
-        paddingLeft: `${padding}px`,
-        // 마지막 아이템이 아닌 경우에만 하단 보더 추가
-        borderBottom: '1px solid #f5f5f5'
-      }}
+      style={{ paddingLeft: `${padding}px` }}
       onClick={onToggle}
     >
       {type === 'folder' && (

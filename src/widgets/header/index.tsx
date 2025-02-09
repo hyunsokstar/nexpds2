@@ -1,4 +1,4 @@
-// C:\Users\terec\super\nexpds2\src\widgets\header\index.tsx
+// widgets/header/index.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -10,7 +10,9 @@ import { useMenuStore } from "@/store/tabStore";
 
 export default function Header() {
   const router = useRouter();
-  const { activeId, setActiveMenu, getAllMenus } = useMenuStore();
+
+  // store
+  const { activeId, setActiveMenu, getAllMenus, addOrActivateTab } = useMenuStore();
   const menuItems = getAllMenus();
 
   const handleLoginOut = () => {
@@ -18,9 +20,17 @@ export default function Header() {
     router.push("/login");
   };
 
+  // 헤더 메뉴 클릭 시
+  const handleMenuClick = (menuId: number) => {
+    setActiveMenu(menuId); // 기존 로직: activeId / selectedMenuItem 갱신
+    const target = menuItems.find((m) => m.id === menuId);
+    if (target) {
+      addOrActivateTab(target);  //  <-- 탭 추가/활성 로직
+    }
+  };
+
   return (
-    // 헤더 전체를 fixed로 잡고, 최상단(z-50)으로 올려줌
-    <div className="fixed top-0 left-0 w-full z-50">
+    <div className="w-full z-50">
       {/* 상단 얇은 바 */}
       <div className="header-top bg-[#5BC2C1] h-[28px] flex items-center">
         <div className="px-4 flex justify-between items-center w-full">
@@ -52,7 +62,7 @@ export default function Header() {
               icon={item.icon}
               title={item.title}
               isActive={activeId === item.id}
-              onClick={() => setActiveMenu(item.id)}
+              onClick={() => handleMenuClick(item.id)} // 수정
             />
           ))}
         </nav>
