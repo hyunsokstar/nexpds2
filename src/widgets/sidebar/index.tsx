@@ -1,13 +1,14 @@
-// widgets/sidebar/index.tsx
 "use client";
 
 import React, { useCallback, useState, useEffect } from "react";
 import { Resizable } from "re-resizable";
 import { useSidebarStore } from "@/store/useSidebarStore";
-import { SidebarTree } from "./ui/SidebarTree";
-import { sidebarData } from "./model/sidebarData";
-import { SidebarToggleButton } from "./ui/SidebarToggleButton";
 import { debounce } from 'lodash';
+import { SidebarHeader } from './ui/SidebarHeader';
+import { TabContent } from './ui/TabContent';
+import { SidebarToggleButton } from "./ui/SidebarToggleButton";
+import { useSidebarTabStore } from "./model/store";
+import { SidebarTabs } from "./ui/SidebarTabs";
 
 export default function Sidebar() {
   const { isOpen, width, setWidth } = useSidebarStore();
@@ -15,7 +16,6 @@ export default function Sidebar() {
   const [isResizing, setIsResizing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
 
-  // 초기 렌더링 시 상태 초기화 완료를 확인
   useEffect(() => {
     setIsInitialized(true);
   }, []);
@@ -42,7 +42,6 @@ export default function Sidebar() {
     document.body.style.cursor = 'default';
   }, []);
 
-  // 초기화되기 전까지는 투명하게 처리
   if (!isInitialized) {
     return <div className="h-[calc(100vh-112px)] opacity-0" />;
   }
@@ -87,14 +86,16 @@ export default function Sidebar() {
         
         <div 
           className={`
-            h-full
+            h-full flex flex-col
             ${!isOpen && 'w-0 overflow-hidden'}
             ${isResizing ? '' : 'transition-all duration-300 ease-in-out'}
           `}
         >
-          <div className="p-4 overflow-y-auto h-full">
-            <SidebarTree data={sidebarData} />
+          <SidebarHeader />
+          <div className="flex-1 overflow-hidden">
+            <TabContent />
           </div>
+          <SidebarTabs />
         </div>
 
         <div 
