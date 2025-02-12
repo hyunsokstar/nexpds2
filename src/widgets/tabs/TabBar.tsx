@@ -1,8 +1,12 @@
-// widgets/tabs/TabBar.tsx
-import { X, ArrowLeftRight } from "lucide-react";
+// TabBar.tsx
+import { X, ArrowLeftRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useMenuStore } from "@/store/tabStore";
+import { useRef, useState, useEffect } from "react";
 
 export function TabBar({ position }: { position: 'left' | 'right' }) {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [showScrollButtons, setShowScrollButtons] = useState(false);
+
   const { 
     leftTabs, 
     rightTabs, 
@@ -15,10 +19,24 @@ export function TabBar({ position }: { position: 'left' | 'right' }) {
     isSplit
   } = useMenuStore();
 
-  // position에 따른 상태 선택
   const tabs = position === 'left' ? leftTabs : rightTabs;
   const activeTabId = position === 'left' ? activeLeftTabId : activeRightTabId;
   const otherActiveTabId = position === 'left' ? activeRightTabId : activeLeftTabId;
+
+  useEffect(() => {
+    setShowScrollButtons(tabs.length >= 6);
+  }, [tabs.length]);
+
+  const handleScroll = (direction: 'left' | 'right') => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      const scrollAmount = direction === 'left' ? -200 : 200;
+      container.scrollBy({
+        left: scrollAmount,
+        behavior: 'smooth'
+      });
+    }
+  };
 
   if (tabs.length === 0) {
     return null;
@@ -26,66 +44,96 @@ export function TabBar({ position }: { position: 'left' | 'right' }) {
 
   const handleButtonClick = () => {
     if (position === 'right' && isSplit) {
-      // 오른쪽 영역에서만 분할 해제 기능 제공
       toggleSplit();
     } else {
-      // 왼쪽 영역 또는 분할되지 않은 상태에서는 탭 이동
       if (activeTabId) {
         moveTabToOtherSide(activeTabId, position);
       }
     }
   };
 
-  // 각 탭의 스타일을 결정하는 함수
   const getTabClassName = (tabId: number) => {
     const isCurrentActive = tabId === activeTabId;
     const isOtherActive = tabId === otherActiveTabId;
     
-    const baseStyle = "flex items-center px-2 h-8 rounded-t cursor-pointer border ";
+    const baseStyle = "flex items-center px-2 h-8 rounded-t cursor-pointer border shrink-0 ";
     
     if (isCurrentActive) {
-      // 현재 영역의 활성 탭
       return `${baseStyle} bg-white border-solid border-2 border-blue-400 border-b-0`;
     } else if (isOtherActive) {
-      // 다른 영역의 활성 탭
       return `${baseStyle} bg-white border-solid border border-blue-400 border-b-0`;
     } else {
-      // 일반 탭 (점선 테두리)
       return `${baseStyle} border-dashed border-gray-300 hover:border-gray-400`;
     }
   };
 
   return (
     <div className="relative w-full h-10">
-      {/* 탭 바 */}
       <div className="relative border-b px-2 flex items-center justify-between h-10">
-        {/* 탭 목록 */}
-        <div className="flex items-center space-x-2 flex-1">
-          {tabs.map((tab) => (
-            <div
-              key={tab.id}
-              className={getTabClassName(tab.id)}
-              onClick={() => setActiveTab(tab.id, position)}
-            >
-              <div className={tab.id === activeTabId ? 'font-semibold' : ''}>
-                {tab.title}
-              </div>
+        <div className="flex-1 relative flex items-center overflow-hidden">
+          {/* 왼쪽 스크롤 버튼 */}
+          {showScrollButtons && (
+            <div className="absolute left-0 top-0 bottom-0 bg-white z-20">
               <button
-                className="ml-2 text-gray-400 hover:text-gray-600"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  closeTab(tab.id, position);
-                }}
+                className="h-full px-1 hover:bg-gray-50 border-r flex items-center"
+                onClick={() => handleScroll('left')}
               >
-                <X className="w-4 h-4" />
+                <ChevronLeft className="w-4 h-4" />
               </button>
             </div>
-          ))}
+          )}
+
+          {/* 탭 목록 */}
+          <div 
+            ref={scrollContainerRef}
+            className={`
+              flex-1 flex items-center space-x-2 
+              overflow-x-scroll scrollbar-none 
+              ${showScrollButtons ? 'px-6' : ''}
+            `}
+            style={{
+              msOverflowStyle: 'none',
+              scrollbarWidth: 'none',
+            }}
+          >
+            {tabs.map((tab) => (
+              <div
+                key={tab.id}
+                className={getTabClassName(tab.id)}
+                onClick={() => setActiveTab(tab.id, position)}
+              >
+                <div className={tab.id === activeTabId ? 'font-semibold whitespace-nowrap' : 'whitespace-nowrap'}>
+                  {tab.title}
+                </div>
+                <button
+                  className="ml-2 text-gray-400 hover:text-gray-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    closeTab(tab.id, position);
+                  }}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* 오른쪽 스크롤 버튼 */}
+          {showScrollButtons && (
+            <div className="absolute right-0 top-0 bottom-0 bg-white z-20">
+              <button
+                className="h-full px-1 hover:bg-gray-50 border-l flex items-center"
+                onClick={() => handleScroll('right')}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
         </div>
 
         {/* 분할/이동 버튼 */}
         <button 
-          className={`ml-2 p-1 hover:bg-gray-100 rounded ${
+          className={`ml-2 p-1 hover:bg-gray-100 rounded shrink-0 ${
             position === 'right' && isSplit ? 'border border-dashed border-red-400' : ''
           }`}
           onClick={handleButtonClick}

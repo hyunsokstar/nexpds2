@@ -1,4 +1,4 @@
-// C:\Users\terec\super\nexpds2\src\widgets\layout\index.tsx
+// src\widgets\layout\index.tsx
 "use client";
 
 import Header from "@/widgets/header";
