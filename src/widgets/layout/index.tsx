@@ -19,20 +19,23 @@ export function AppLayout({ children }: AppLayoutProps) {
   const { isSplit } = useMenuStore();
   const [leftWidth, setLeftWidth] = useState(50); // percentage
 
-  // 로그인 페이지일 경우 children만 렌더링
   if (isLoginPage) {
     return <>{children}</>;
   }
 
-  // 리사이즈 핸들러 - 퍼센트 기반으로 너비 조절
-  const handleResizeStop = (_e: any, _direction: any, ref: HTMLElement) => {
+  // 실시간 리사이징 핸들러
+  const handleResize = (_e: any, _direction: any, ref: HTMLElement) => {
     const container = ref.parentElement;
     if (!container) return;
 
     const containerWidth = container.clientWidth;
     const newPercentage = (ref.clientWidth / containerWidth) * 100;
     const clampedPercentage = Math.min(Math.max(newPercentage, 30), 70);
-    setLeftWidth(clampedPercentage);
+    
+    // requestAnimationFrame을 사용하여 부드러운 업데이트
+    requestAnimationFrame(() => {
+      setLeftWidth(clampedPercentage);
+    });
   };
 
   // 리사이저블 컴포넌트 공통 설정
@@ -40,27 +43,21 @@ export function AppLayout({ children }: AppLayoutProps) {
     minWidth: "30%",
     maxWidth: "70%",
     enable: { right: true },
-    onResizeStop: handleResizeStop,
+    onResize: handleResize, // onResizeStop 대신 onResize 사용
   };
 
   return (
     <div className="flex flex-col h-screen">
-      {/* 헤더 영역 */}
       <Header />
 
-      {/* 메인 레이아웃 */}
       <div className="flex flex-1 overflow-hidden">
-        {/* 사이드바 */}
         <div className="relative z-20">
           <Sidebar />
         </div>
 
-        {/* 탭 컨텐츠 영역 */}
         <div className="flex flex-col flex-1">
           {isSplit ? (
-            // 분할 레이아웃
             <div className="flex flex-col flex-1">
-              {/* 탭바 영역 */}
               <div className="flex">
                 <Resizable
                   {...resizableProps}
@@ -71,13 +68,15 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </Resizable>
                 <div 
                   className="border-l border-dashed border-blue-400"
-                  style={{ width: `${100 - leftWidth}%` }}
+                  style={{ 
+                    width: `${100 - leftWidth}%`,
+                    transition: 'width 0ms' // 트랜지션 제거로 즉시 반영
+                  }}
                 >
                   <TabBar position="right" />
                 </div>
               </div>
 
-              {/* 컨텐츠 영역 */}
               <div className="flex flex-1 overflow-hidden">
                 <Resizable
                   {...resizableProps}
@@ -88,14 +87,16 @@ export function AppLayout({ children }: AppLayoutProps) {
                 </Resizable>
                 <div 
                   className="border-l border-dashed border-blue-400 overflow-auto"
-                  style={{ width: `${100 - leftWidth}%` }}
+                  style={{ 
+                    width: `${100 - leftWidth}%`,
+                    transition: 'width 0ms' // 트랜지션 제거로 즉시 반영
+                  }}
                 >
                   <TabContent position="right" />
                 </div>
               </div>
             </div>
           ) : (
-            // 단일 레이아웃
             <>
               <TabBar position="left" />
               <div className="flex-1 overflow-auto">
