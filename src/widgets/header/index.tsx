@@ -12,7 +12,17 @@ export default function Header() {
   const router = useRouter();
 
   // store
-  const { activeId, setActiveMenu, getAllMenus, addOrActivateTab } = useMenuStore();
+  const { 
+    activeId, 
+    activeLeftTabId, 
+    activeRightTabId,
+    leftTabs,
+    rightTabs,
+    setActiveMenu, 
+    getAllMenus, 
+    addOrActivateTab 
+  } = useMenuStore();
+  
   const menuItems = getAllMenus();
 
   const handleLoginOut = () => {
@@ -20,12 +30,24 @@ export default function Header() {
     router.push("/login");
   };
 
+  // 메뉴 아이템이 활성화 상태인지 확인
+  const isMenuActive = (menuId: number) => {
+    // 양쪽 영역의 활성 탭 ID와 비교
+    return menuId === activeLeftTabId || menuId === activeRightTabId;
+  };
+
+  // 메뉴 아이템이 탭으로 등록되어 있는지 확인
+  const isMenuRegistered = (menuId: number) => {
+    return leftTabs.some(tab => tab.id === menuId) || 
+           rightTabs.some(tab => tab.id === menuId);
+  };
+
   // 헤더 메뉴 클릭 시
   const handleMenuClick = (menuId: number) => {
-    setActiveMenu(menuId); // 기존 로직: activeId / selectedMenuItem 갱신
+    setActiveMenu(menuId);
     const target = menuItems.find((m) => m.id === menuId);
     if (target) {
-      addOrActivateTab(target);  //  <-- 탭 추가/활성 로직
+      addOrActivateTab(target);
     }
   };
 
@@ -61,8 +83,9 @@ export default function Header() {
               key={`menu-${item.id}`}
               icon={item.icon}
               title={item.title}
-              isActive={activeId === item.id}
-              onClick={() => handleMenuClick(item.id)} // 수정
+              isActive={isMenuActive(item.id)}
+              isRegistered={isMenuRegistered(item.id)}
+              onClick={() => handleMenuClick(item.id)}
             />
           ))}
         </nav>

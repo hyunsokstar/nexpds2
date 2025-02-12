@@ -10,13 +10,15 @@ interface MenuItemButtonProps {
   icon: string;
   title: string;
   isActive: boolean;
+  isRegistered: boolean;
   onClick: () => void;
 }
 
 export function MenuItemButton({ 
   icon, 
   title, 
-  isActive, 
+  isActive,
+  isRegistered,
   onClick 
 }: MenuItemButtonProps) {
   return (
@@ -27,7 +29,12 @@ export function MenuItemButton({
         "relative w-[100px] h-[80px] p-2 rounded-lg transition-all",
         "hover:bg-[#E5F3F3] hover:shadow-sm",
         "flex flex-col items-center justify-center gap-1",
-        isActive && "bg-[#5BC2C1] text-white shadow-md"
+        "border",
+        isActive 
+          ? "bg-[#5BC2C1] text-white shadow-md border-solid border-[#5BC2C1]" 
+          : isRegistered
+            ? "border-dashed border-gray-300 bg-[#E9ECEF]" // 배경색을 더 진하게 변경
+            : "border-dashed border-gray-300",
       )}
     >
       {isActive && (
@@ -45,7 +52,10 @@ export function MenuItemButton({
         />
       </div>
       <div className="flex items-center gap-1">
-        <span className="text-xs font-medium whitespace-nowrap">
+        <span className={cn(
+          "text-xs font-medium whitespace-nowrap",
+          isActive ? "text-white" : isRegistered ? "text-gray-700" : "text-gray-600"
+        )}>
           {title}
         </span>
       </div>

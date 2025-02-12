@@ -18,6 +18,7 @@ export function TabBar({ position }: { position: 'left' | 'right' }) {
   // position에 따른 상태 선택
   const tabs = position === 'left' ? leftTabs : rightTabs;
   const activeTabId = position === 'left' ? activeLeftTabId : activeRightTabId;
+  const otherActiveTabId = position === 'left' ? activeRightTabId : activeLeftTabId;
 
   if (tabs.length === 0) {
     return null;
@@ -35,6 +36,25 @@ export function TabBar({ position }: { position: 'left' | 'right' }) {
     }
   };
 
+  // 각 탭의 스타일을 결정하는 함수
+  const getTabClassName = (tabId: number) => {
+    const isCurrentActive = tabId === activeTabId;
+    const isOtherActive = tabId === otherActiveTabId;
+    
+    const baseStyle = "flex items-center px-2 h-8 rounded-t cursor-pointer border ";
+    
+    if (isCurrentActive) {
+      // 현재 영역의 활성 탭
+      return `${baseStyle} bg-white border-solid border-2 border-blue-400 border-b-0`;
+    } else if (isOtherActive) {
+      // 다른 영역의 활성 탭
+      return `${baseStyle} bg-white border-solid border border-blue-400 border-b-0`;
+    } else {
+      // 일반 탭 (점선 테두리)
+      return `${baseStyle} border-dashed border-gray-300 hover:border-gray-400`;
+    }
+  };
+
   return (
     <div className="relative w-full h-10">
       {/* 탭 바 */}
@@ -44,12 +64,12 @@ export function TabBar({ position }: { position: 'left' | 'right' }) {
           {tabs.map((tab) => (
             <div
               key={tab.id}
-              className={`flex items-center px-2 h-8 rounded-t cursor-pointer 
-                ${tab.id === activeTabId ? "bg-white border-x border-t border-b-0" : ""}
-              `}
+              className={getTabClassName(tab.id)}
               onClick={() => setActiveTab(tab.id, position)}
             >
-              <div>{tab.title}</div>
+              <div className={tab.id === activeTabId ? 'font-semibold' : ''}>
+                {tab.title}
+              </div>
               <button
                 className="ml-2 text-gray-400 hover:text-gray-600"
                 onClick={(e) => {
