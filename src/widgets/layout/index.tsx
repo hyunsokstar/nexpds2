@@ -8,6 +8,15 @@ import Sidebar from "@/widgets/sidebar";
 import { TabContent } from "@/widgets/tabs/TabContent";
 import { useMenuStore } from "@/store/tabStore";
 import { TabBar } from "@/widgets/tabs/TabBar";
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  useSensor,
+  useSensors,
+  PointerSensor,
+} from "@dnd-kit/core";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -30,9 +39,25 @@ const saveSplitWidth = (width: number) => {
 export function AppLayout({ children }: AppLayoutProps) {
   const pathname = usePathname();
   const isLoginPage = pathname === "/login";
-  const { isSplit } = useMenuStore();
+  const { 
+    isSplit, 
+    leftTabs, 
+    rightTabs,
+    moveTabToOtherSide,
+    reorderTabs,
+  } = useMenuStore();
+  
   const [leftWidth, setLeftWidth] = useState(DEFAULT_SPLIT_WIDTH);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  );
 
   // 초기 상태 로드
   useEffect(() => {
@@ -56,6 +81,42 @@ export function AppLayout({ children }: AppLayoutProps) {
       setLeftWidth(clampedPercentage);
       saveSplitWidth(clampedPercentage);
     });
+  };
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (!over) return;
+
+    const activeId = active.id as string;
+    const [activePosition, activeTabId] = activeId.split('-');
+
+    // 드롭 가능한 영역의 ID에서 position 추출
+    const overId = over.id as string;
+    const overPosition = overId.split('-')[0];
+
+    if (activePosition !== overPosition) {
+      // 다른 영역으로 이동 (droppable 영역으로 드롭된 경우)
+      if (overId.endsWith('-droppable')) {
+        moveTabToOtherSide(Number(activeTabId), activePosition as 'left' | 'right');
+      }
+    } else {
+      // 같은 영역 내에서 순서 변경 (탭에 직접 드롭된 경우)
+      const [_, overTabId] = over.id.toString().split('-');
+      if (!overId.endsWith('-droppable')) {
+        reorderTabs(
+          Number(activeTabId),
+          Number(overTabId),
+          activePosition as 'left' | 'right'
+        );
+      }
+    }
+
+    setActiveId(null);
   };
 
   const resizableProps = {
@@ -86,45 +147,63 @@ export function AppLayout({ children }: AppLayoutProps) {
 
         <div className="flex flex-col flex-1">
           {isSplit ? (
-            <div className="flex flex-col flex-1">
-              <div className="flex">
-                <Resizable
-                  {...resizableProps}
-                  size={{ width: `${leftWidth}%`, height: "auto" }}
-                  className="border-r border-dashed border-red-400"
-                >
-                  <TabBar position="left" />
-                </Resizable>
-                <div 
-                  className="border-l border-dashed border-blue-400"
-                  style={{ 
-                    width: `${100 - leftWidth}%`,
-                    transition: 'width 0ms'
-                  }}
-                >
-                  <TabBar position="right" />
+            <DndContext
+              sensors={sensors}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="flex flex-col flex-1">
+                <div className="flex h-10">
+                  <Resizable
+                    {...resizableProps}
+                    size={{ width: `${leftWidth}%`, height: "auto" }}
+                    className="border-r border-dashed border-red-400"
+                  >
+                    <div className="h-full">
+                      <TabBar position="left" />
+                    </div>
+                  </Resizable>
+                  <div 
+                    className="border-l border-dashed border-blue-400 h-full"
+                    style={{ 
+                      width: `${100 - leftWidth}%`,
+                      transition: 'width 0ms'
+                    }}
+                  >
+                    <TabBar position="right" />
+                  </div>
                 </div>
-              </div>
 
-              <div className="flex flex-1 overflow-hidden">
-                <Resizable
-                  {...resizableProps}
-                  size={{ width: `${leftWidth}%`, height: "auto" }}
-                  className="border-r border-dashed border-red-400 overflow-auto"
-                >
-                  <TabContent position="left" />
-                </Resizable>
-                <div 
-                  className="border-l border-dashed border-blue-400 overflow-auto"
-                  style={{ 
-                    width: `${100 - leftWidth}%`,
-                    transition: 'width 0ms'
-                  }}
-                >
-                  <TabContent position="right" />
+                <div className="flex flex-1 overflow-hidden">
+                  <Resizable
+                    {...resizableProps}
+                    size={{ width: `${leftWidth}%`, height: "auto" }}
+                    className="border-r border-dashed border-red-400 overflow-auto"
+                  >
+                    <TabContent position="left" />
+                  </Resizable>
+                  <div 
+                    className="border-l border-dashed border-blue-400 overflow-auto"
+                    style={{ 
+                      width: `${100 - leftWidth}%`,
+                      transition: 'width 0ms'
+                    }}
+                  >
+                    <TabContent position="right" />
+                  </div>
                 </div>
+
+                <DragOverlay>
+                  {activeId ? (
+                    <div className="bg-white border border-dashed border-blue-400 px-2 py-1 rounded shadow-lg">
+                      {[...leftTabs, ...rightTabs].find(
+                        tab => `${tab.position}-${tab.id}` === activeId
+                      )?.title}
+                    </div>
+                  ) : null}
+                </DragOverlay>
               </div>
-            </div>
+            </DndContext>
           ) : (
             <>
               <TabBar position="left" />

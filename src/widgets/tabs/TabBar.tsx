@@ -9,6 +9,7 @@ import {
   useSensor,
   useSensors,
   PointerSensor,
+  useDroppable,
 } from "@dnd-kit/core";
 import {
   SortableContext,
@@ -88,6 +89,27 @@ function DraggableTab({ tab, position, isActive, isOtherActive, onClose, onClick
   );
 }
 
+interface TabBarContainerProps {
+  position: 'left' | 'right';
+  children: React.ReactNode;
+}
+
+function TabBarContainer({ position, children }: TabBarContainerProps) {
+  const { setNodeRef } = useDroppable({
+    id: `${position}-droppable`,
+    data: {
+      type: 'tabbar',
+      position,
+    },
+  });
+
+  return (
+    <div ref={setNodeRef} className="h-full w-full">
+      {children}
+    </div>
+  );
+}
+
 interface TabBarProps {
   position: 'left' | 'right';
 }
@@ -95,7 +117,6 @@ interface TabBarProps {
 export function TabBar({ position }: TabBarProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollButtons, setShowScrollButtons] = useState(false);
-  const [activeId, setActiveId] = useState<string | null>(null);
 
   const { 
     leftTabs, 
@@ -107,16 +128,7 @@ export function TabBar({ position }: TabBarProps) {
     moveTabToOtherSide,
     toggleSplit,
     isSplit,
-    reorderTabs,
   } = useMenuStore();
-
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
-    })
-  );
 
   const tabs = position === 'left' ? leftTabs : rightTabs;
   const activeTabId = position === 'left' ? activeLeftTabId : activeRightTabId;
@@ -135,36 +147,6 @@ export function TabBar({ position }: TabBarProps) {
         behavior: 'smooth'
       });
     }
-  };
-
-  const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    const { active, over } = event;
-    
-    if (!over) return;
-
-    const activeId = active.id as string;
-    const overId = over.id as string;
-    
-    const [activePosition, activeTabId] = activeId.split('-');
-    const [overPosition, overTabId] = overId.split('-');
-
-    if (activePosition !== overPosition) {
-      // 다른 영역으로 이동
-      moveTabToOtherSide(Number(activeTabId), activePosition as 'left' | 'right');
-    } else if (activeId !== overId) {
-      // 같은 영역 내에서 순서 변경
-      reorderTabs(
-        Number(activeTabId),
-        Number(overTabId),
-        position
-      );
-    }
-
-    setActiveId(null);
   };
 
   const renderControlButtons = () => {
@@ -207,12 +189,8 @@ export function TabBar({ position }: TabBarProps) {
   }
 
   return (
-    <div className="relative w-full h-10">
-      <DndContext
-        sensors={sensors}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-      >
+    <TabBarContainer position={position}>
+      <div className="relative w-full h-10">
         <div className="relative border-b px-2 flex items-center justify-between h-10">
           <div className="flex-1 relative flex items-center overflow-hidden">
             {showScrollButtons && (
@@ -268,15 +246,7 @@ export function TabBar({ position }: TabBarProps) {
             {renderControlButtons()}
           </div>
         </div>
-
-        <DragOverlay>
-          {activeId ? (
-            <div className="bg-white border border-dashed border-blue-400 px-2 py-1 rounded shadow-lg">
-              {tabs.find(tab => `${position}-${tab.id}` === activeId)?.title}
-            </div>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
-    </div>
+      </div>
+    </TabBarContainer>
   );
 }
