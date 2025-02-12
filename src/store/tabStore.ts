@@ -1,4 +1,4 @@
-// store/useMenuStore.ts
+// store/tabStore.ts (단계 2 적용)
 import { create } from 'zustand';
 import { MenuItem, menuItems } from '@/widgets/header/model/menuItems';
 
@@ -6,27 +6,35 @@ import { MenuItem, menuItems } from '@/widgets/header/model/menuItems';
 export interface TabInfo {
   id: number;
   title: string;
-  icon?: string; 
-  // 필요하다면 더 넣어주세요 (ex: path, componentName 등)
+  icon?: string;
+  position: 'left' | 'right';
 }
 
 interface MenuStore {
-  // 기존
+  // 헤더 메뉴 관련
   activeId: number | null;
   selectedMenuItem: MenuItem | null;
   setActiveMenu: (menuId: number) => void;
   getAllMenus: () => MenuItem[];
 
   // 탭 관련
-  openedTabs: TabInfo[];         // 열린 탭 리스트
-  activeTabId: number | null;    // 현재 활성 탭
-  addOrActivateTab: (menu: MenuItem) => void;
-  closeTab: (tabId: number) => void;
-  setActiveTab: (tabId: number) => void;
+  leftTabs: TabInfo[];           // 왼쪽 영역 탭 리스트
+  rightTabs: TabInfo[];          // 오른쪽 영역 탭 리스트
+  activeLeftTabId: number | null;    // 왼쪽 활성 탭
+  activeRightTabId: number | null;   // 오른쪽 활성 탭
+  isSplit: boolean;                  // 화면 분할 상태
+
+  // 탭 조작 메서드
+  addOrActivateTab: (menu: MenuItem, position?: 'left' | 'right') => void;
+  closeTab: (tabId: number, position: 'left' | 'right') => void;
+  setActiveTab: (tabId: number, position: 'left' | 'right') => void;
+  moveTabToOtherSide: (tabId: number, fromPosition: 'left' | 'right') => void;
+  setTabPosition: (tabId: number, position: 'left' | 'right') => void; // 추가: 탭 위치 설정
+  toggleSplit: () => void;
 }
 
 export const useMenuStore = create<MenuStore>((set, get) => ({
-  // ----- 기존 속성들 -----
+  // ----- 헤더 메뉴 관련 -----
   activeId: null,
   selectedMenuItem: null,
   setActiveMenu: (menuId) => {
@@ -37,61 +45,149 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
       selectedMenuItem: selectedItem
     });
   },
-  getAllMenus: () => menuItems, // menuItems는 model/menuItems.ts에서 import
+  getAllMenus: () => menuItems,
 
   // ----- 탭 관련 초기 상태 -----
-  openedTabs: [],
-  activeTabId: null,
+  leftTabs: [],
+  rightTabs: [],
+  activeLeftTabId: null,
+  activeRightTabId: null,
+  isSplit: false,
 
   // ----- 탭 기능 메서드 -----
-  addOrActivateTab: (menu: MenuItem) => {
-    const { openedTabs } = get();
-    // 이미 열려있는지 확인
-    const isExist = openedTabs.find((tab) => tab.id === menu.id);
+  addOrActivateTab: (menu: MenuItem, position: 'left' | 'right' = 'left') => {
+    const currentTabs = position === 'left' ? get().leftTabs : get().rightTabs;
+    const isExist = currentTabs.find(tab => tab.id === menu.id);
+
     if (!isExist) {
       // 새 탭 추가
       const newTab: TabInfo = {
         id: menu.id,
         title: menu.title,
-        icon: menu.icon
+        icon: menu.icon,
+        position
       };
-      set({
-        openedTabs: [...openedTabs, newTab],
-        activeTabId: menu.id
-      });
+
+      if (position === 'left') {
+        set(state => ({
+          leftTabs: [...state.leftTabs, newTab],
+          activeLeftTabId: menu.id,
+          activeId: menu.id
+        }));
+      } else {
+        set(state => ({
+          rightTabs: [...state.rightTabs, newTab],
+          activeRightTabId: menu.id,
+          activeId: menu.id,
+          isSplit: true // 오른쪽에 탭 추가시 자동으로 분할
+        }));
+      }
     } else {
       // 이미 있으면 활성화만
+      if (position === 'left') {
+        set({ activeLeftTabId: menu.id, activeId: menu.id });
+      } else {
+        set({ activeRightTabId: menu.id, activeId: menu.id });
+      }
+    }
+  },
+
+  closeTab: (tabId: number, position: 'left' | 'right') => {
+    const currentTabs = position === 'left' ? get().leftTabs : get().rightTabs;
+    const currentActiveId = position === 'left' ? get().activeLeftTabId : get().activeRightTabId;
+
+    // 탭 제거
+    const newTabs = currentTabs.filter(tab => tab.id !== tabId);
+
+    // 새로운 활성 탭 ID 결정
+    let newActiveId = currentActiveId;
+    if (currentActiveId === tabId) {
+      newActiveId = newTabs.length > 0 ? newTabs[newTabs.length - 1].id : null;
+    }
+
+    if (position === 'left') {
       set({
-        activeTabId: menu.id
+        leftTabs: newTabs,
+        activeLeftTabId: newActiveId,
+        activeId: newActiveId
+      });
+    } else {
+      set({
+        rightTabs: newTabs,
+        activeRightTabId: newActiveId,
+        activeId: newActiveId,
+        isSplit: newTabs.length > 0 // 오른쪽 탭이 모두 닫히면 분할 해제
       });
     }
   },
 
-  closeTab: (tabId: number) => {
-    const { openedTabs, activeTabId } = get();
-    // 탭 제거
-    const newTabs = openedTabs.filter((tab) => tab.id !== tabId);
-
-    let newActiveTabId = activeTabId;
-    if (activeTabId === tabId) {
-      // 닫은 탭이 현재 활성 탭이면, 남아있는 탭 중 마지막으로 활성화 (or 첫 번째)
-      if (newTabs.length > 0) {
-        newActiveTabId = newTabs[newTabs.length - 1].id;
-      } else {
-        newActiveTabId = null;
-      }
+  setActiveTab: (tabId: number, position: 'left' | 'right') => {
+    if (position === 'left') {
+      set({
+        activeLeftTabId: tabId,
+        activeId: tabId
+      });
+    } else {
+      set({
+        activeRightTabId: tabId,
+        activeId: tabId
+      });
     }
-
-    set({
-      openedTabs: newTabs,
-      activeTabId: newActiveTabId
-    });
   },
 
-  setActiveTab: (tabId: number) => {
-    set({ 
-      activeTabId: tabId,
-      activeId: tabId  // 헤더 메뉴의 active 상태도 함께 업데이트
-    });
+  // 단계 2: 탭 이동 후 활성화
+  moveTabToOtherSide: (tabId: number, fromPosition: 'left' | 'right') => {
+      const toPosition = fromPosition === 'left' ? 'right' as const : 'left' as const;
+      const sourceTabs = fromPosition === 'left' ? get().leftTabs : get().rightTabs;
+      const tabToMove = sourceTabs.find(tab => tab.id === tabId);
+      
+      if (!tabToMove) return;
+
+      // Create updated tab with correct position type
+      const updatedTab: TabInfo = { ...tabToMove, position: toPosition };
+
+      set(state => {
+          const newLeftTabs = fromPosition === 'left' 
+              ? state.leftTabs.filter(t => t.id !== tabId)
+              : [...state.leftTabs, updatedTab];
+          
+          const newRightTabs = fromPosition === 'right'
+              ? state.rightTabs.filter(t => t.id !== tabId)
+              : [...state.rightTabs, updatedTab];
+
+          return {
+              leftTabs: newLeftTabs,
+              rightTabs: newRightTabs,
+              activeLeftTabId: toPosition === 'left' ? tabId : state.activeLeftTabId,
+              activeRightTabId: toPosition === 'right' ? tabId : state.activeRightTabId,
+              isSplit: true
+          };
+      });
   },
+
+  // 탭 위치 설정 (필요에 따라 사용)
+  setTabPosition: (tabId: number, position: 'left' | 'right') => {
+    set(state => ({
+      leftTabs: state.leftTabs.map(tab => tab.id === tabId ? { ...tab, position } : tab),
+      rightTabs: state.rightTabs.map(tab => tab.id === tabId ? { ...tab, position } : tab),
+    }));
+  },
+
+
+  toggleSplit: () => {
+    const { isSplit, rightTabs } = get();
+    // 분할 상태일 때 토글하면 오른쪽 탭들을 왼쪽으로 이동
+    if (isSplit) {
+      rightTabs.forEach(tab => {
+        get().moveTabToOtherSide(tab.id, 'right');
+      });
+      set({ isSplit: false });
+    } else if (get().leftTabs.length > 0) {
+      // 분할되지 않은 상태에서 왼쪽에 탭이 있으면
+      // 마지막 탭을 오른쪽으로 이동
+      const lastTab = get().leftTabs[get().leftTabs.length - 1];
+      get().moveTabToOtherSide(lastTab.id, 'left');
+      set({ isSplit: true });
+    }
+  }
 }));
