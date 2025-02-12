@@ -32,6 +32,8 @@ interface MenuStore {
   moveTabToOtherSide: (tabId: number, fromPosition: 'left' | 'right') => void;
   setTabPosition: (tabId: number, position: 'left' | 'right') => void;
   toggleSplit: () => void;
+  reorderTabs: (activeTabId: number, overTabId: number, position: 'left' | 'right') => void;
+
 }
 
 export const useMenuStore = create<MenuStore>((set, get) => ({
@@ -141,40 +143,40 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
     const toPosition = fromPosition === 'left' ? 'right' as const : 'left' as const;
     const sourceTabs = fromPosition === 'left' ? get().leftTabs : get().rightTabs;
     const tabToMove = sourceTabs.find(tab => tab.id === tabId);
-    
+
     if (!tabToMove) return;
 
     // 이동하는 탭이 현재 활성 탭인 경우, 해당 영역의 새로운 활성 탭을 결정
     let newSourceActiveId = null;
-    if ((fromPosition === 'left' && tabId === get().activeLeftTabId) || 
-        (fromPosition === 'right' && tabId === get().activeRightTabId)) {
+    if ((fromPosition === 'left' && tabId === get().activeLeftTabId) ||
+      (fromPosition === 'right' && tabId === get().activeRightTabId)) {
       const remainingTabs = sourceTabs.filter(t => t.id !== tabId);
       newSourceActiveId = remainingTabs.length > 0 ? remainingTabs[remainingTabs.length - 1].id : null;
     }
 
     // originalPosition은 유지한 채로 현재 position만 업데이트
-    const updatedTab: TabInfo = { 
-      ...tabToMove, 
+    const updatedTab: TabInfo = {
+      ...tabToMove,
       position: toPosition,
-      originalPosition: tabToMove.originalPosition 
+      originalPosition: tabToMove.originalPosition
     };
 
     set(state => {
       const newState = {
-        leftTabs: fromPosition === 'left' 
+        leftTabs: fromPosition === 'left'
           ? state.leftTabs.filter(t => t.id !== tabId)
           : [...state.leftTabs, updatedTab],
         rightTabs: fromPosition === 'right'
           ? state.rightTabs.filter(t => t.id !== tabId)
           : [...state.rightTabs, updatedTab],
-        
-        activeLeftTabId: toPosition === 'left' 
-          ? tabId 
+
+        activeLeftTabId: toPosition === 'left'
+          ? tabId
           : (fromPosition === 'left' ? (newSourceActiveId ?? state.activeLeftTabId) : state.activeLeftTabId),
         activeRightTabId: toPosition === 'right'
           ? tabId
           : (fromPosition === 'right' ? (newSourceActiveId ?? state.activeRightTabId) : state.activeRightTabId),
-        
+
         isSplit: true
       };
 
@@ -184,47 +186,65 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
 
   setTabPosition: (tabId: number, position: 'left' | 'right') => {
     set(state => ({
-      leftTabs: state.leftTabs.map(tab => 
+      leftTabs: state.leftTabs.map(tab =>
         tab.id === tabId ? { ...tab, position } : tab
       ),
-      rightTabs: state.rightTabs.map(tab => 
+      rightTabs: state.rightTabs.map(tab =>
         tab.id === tabId ? { ...tab, position } : tab
       ),
     }));
   },
 
-// toggleSplit 함수만 수정
-toggleSplit: () => {
-  const { isSplit, rightTabs } = get();
-  
-  if (isSplit) {
-    // 분할 상태일 때 토글하면 오른쪽 탭들을 왼쪽으로 이동
-    rightTabs.forEach(tab => {
-      const sourceTabs = get().rightTabs;
-      const tabToMove = sourceTabs.find(t => t.id === tab.id);
-      
-      if (tabToMove) {
-        // 왼쪽으로 이동
-        set(state => ({
-          leftTabs: [...state.leftTabs, { ...tabToMove, position: 'left' }],
-          rightTabs: state.rightTabs.filter(t => t.id !== tab.id),
-          activeLeftTabId: state.leftTabs.length > 0 ? state.leftTabs[state.leftTabs.length - 1].id : tab.id
-        }));
-      }
+  // toggleSplit 함수만 수정
+  toggleSplit: () => {
+    const { isSplit, rightTabs } = get();
+
+    if (isSplit) {
+      // 분할 상태일 때 토글하면 오른쪽 탭들을 왼쪽으로 이동
+      rightTabs.forEach(tab => {
+        const sourceTabs = get().rightTabs;
+        const tabToMove = sourceTabs.find(t => t.id === tab.id);
+
+        if (tabToMove) {
+          // 왼쪽으로 이동
+          set(state => ({
+            leftTabs: [...state.leftTabs, { ...tabToMove, position: 'left' }],
+            rightTabs: state.rightTabs.filter(t => t.id !== tab.id),
+            activeLeftTabId: state.leftTabs.length > 0 ? state.leftTabs[state.leftTabs.length - 1].id : tab.id
+          }));
+        }
+      });
+
+      // 분할 상태 해제 및 오른쪽 탭 관련 상태 초기화
+      set(state => ({
+        isSplit: false,
+        rightTabs: [],
+        activeRightTabId: null
+      }));
+    } else if (get().leftTabs.length > 0) {
+      // 분할되지 않은 상태에서 왼쪽에 탭이 있으면
+      // 마지막 탭을 오른쪽으로 이동
+      const lastTab = get().leftTabs[get().leftTabs.length - 1];
+      get().moveTabToOtherSide(lastTab.id, 'left');
+      set({ isSplit: true });
+    }
+  },
+
+  reorderTabs: (activeTabId, overTabId, position) => {
+    set((state) => {
+      const tabs = position === 'left' ? [...state.leftTabs] : [...state.rightTabs];
+      const activeIndex = tabs.findIndex(tab => tab.id === activeTabId);
+      const overIndex = tabs.findIndex(tab => tab.id === overTabId);
+
+      if (activeIndex === -1 || overIndex === -1) return state;
+
+      const [removedTab] = tabs.splice(activeIndex, 1);
+      tabs.splice(overIndex, 0, removedTab);
+
+      return position === 'left'
+        ? { ...state, leftTabs: tabs }
+        : { ...state, rightTabs: tabs };
     });
-    
-    // 분할 상태 해제 및 오른쪽 탭 관련 상태 초기화
-    set(state => ({
-      isSplit: false,
-      rightTabs: [],
-      activeRightTabId: null
-    }));
-  } else if (get().leftTabs.length > 0) {
-    // 분할되지 않은 상태에서 왼쪽에 탭이 있으면
-    // 마지막 탭을 오른쪽으로 이동
-    const lastTab = get().leftTabs[get().leftTabs.length - 1];
-    get().moveTabToOtherSide(lastTab.id, 'left');
-    set({ isSplit: true });
-  }
-}
+  },
+
 }));
