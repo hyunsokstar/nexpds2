@@ -23,12 +23,12 @@ export function TabBar({ position }: { position: 'left' | 'right' }) {
     return null;
   }
 
-  const handleSplitToggle = () => {
-    if (isSplit) {
-      // 분할된 상태에서는 toggleSplit을 호출하여 해제
+  const handleButtonClick = () => {
+    if (position === 'right' && isSplit) {
+      // 오른쪽 영역에서만 분할 해제 기능 제공
       toggleSplit();
     } else {
-      // 분할되지 않은 상태에서는 현재 활성 탭을 반대편으로 이동
+      // 왼쪽 영역 또는 분할되지 않은 상태에서는 탭 이동
       if (activeTabId) {
         moveTabToOtherSide(activeTabId, position);
       }
@@ -63,15 +63,17 @@ export function TabBar({ position }: { position: 'left' | 'right' }) {
           ))}
         </div>
 
-        {/* 분할/해제 토글 버튼 */}
+        {/* 분할/이동 버튼 */}
         <button 
           className={`ml-2 p-1 hover:bg-gray-100 rounded ${
-            isSplit ? 'border border-dashed border-red-400' : ''
+            position === 'right' && isSplit ? 'border border-dashed border-red-400' : ''
           }`}
-          onClick={handleSplitToggle}
-          title={isSplit ? "분할 해제" : "탭 이동"}
+          onClick={handleButtonClick}
+          title={position === 'right' && isSplit ? "분할 해제" : "탭 이동"}
         >
-          <ArrowLeftRight className={`w-4 h-4 ${isSplit ? 'text-red-400' : ''}`} />
+          <ArrowLeftRight className={`w-4 h-4 ${
+            position === 'right' && isSplit ? 'text-red-400' : ''
+          }`} />
         </button>
       </div>
     </div>
