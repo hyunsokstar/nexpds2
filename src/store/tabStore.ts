@@ -89,6 +89,9 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
   },
 
   setActiveTab: (tabId: number) => {
-    set({ activeTabId: tabId });
+    set({ 
+      activeTabId: tabId,
+      activeId: tabId  // 헤더 메뉴의 active 상태도 함께 업데이트
+    });
   },
 }));

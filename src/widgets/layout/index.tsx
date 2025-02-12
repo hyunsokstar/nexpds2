@@ -37,11 +37,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           {/* 메인 컨텐츠 (하단) */}
           <main className="flex-1 px-4 pt-2">
             <TabContent />
-
-            {/* 기존 children도 함께 쓰려면 */}
-            {/* <div className="mt-4">
-              {children}
-            </div> */}
           </main>
         </div>
       </div>
