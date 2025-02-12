@@ -1,7 +1,7 @@
 // widgets/sidebar/index.tsx
 "use client";
 
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import { Resizable } from "re-resizable";
 import { useSidebarStore } from "@/store/useSidebarStore";
 import { SidebarTree } from "./ui/SidebarTree";
@@ -13,6 +13,12 @@ export default function Sidebar() {
   const { isOpen, width, setWidth } = useSidebarStore();
   const toggleSidebar = useSidebarStore((state) => state.toggleSidebar);
   const [isResizing, setIsResizing] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // 초기 렌더링 시 상태 초기화 완료를 확인
+  useEffect(() => {
+    setIsInitialized(true);
+  }, []);
 
   const debouncedSetWidth = useCallback(
     debounce((width: number) => {
@@ -35,6 +41,11 @@ export default function Sidebar() {
     setIsResizing(false);
     document.body.style.cursor = 'default';
   }, []);
+
+  // 초기화되기 전까지는 투명하게 처리
+  if (!isInitialized) {
+    return <div className="h-[calc(100vh-112px)] opacity-0" />;
+  }
 
   return (
     <div className="h-[calc(100vh-112px)]">
@@ -86,7 +97,6 @@ export default function Sidebar() {
           </div>
         </div>
 
-        {/* 경계선 */}
         <div 
           className={`
             absolute top-0 -right-px w-px h-full bg-gray-200
