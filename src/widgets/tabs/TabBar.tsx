@@ -1,4 +1,4 @@
-// TabBar.tsx
+// src/widgets/tabs/TabBar.tsx
 import { X, ArrowLeftRight, ChevronLeft, ChevronRight } from "lucide-react";
 import { useMenuStore } from "@/store/tabStore";
 import { useRef, useState, useEffect } from "react";

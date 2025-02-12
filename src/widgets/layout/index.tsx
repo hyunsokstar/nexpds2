@@ -1,4 +1,4 @@
-// src\widgets\layout\index.tsx
+// src/widgets/layout/index.tsx
 "use client";
 
 import Header from "@/widgets/header";
@@ -6,7 +6,7 @@ import Sidebar from "@/widgets/sidebar";
 import { usePathname } from "next/navigation";
 import { TabContent } from "@/widgets/tabs/TabContent";
 import { useMenuStore } from "@/store/tabStore";
-import { TabBar } from "@/widgets/tabs/TabBar"; // import 수정
+import { TabBar } from "@/widgets/tabs/TabBar";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -47,11 +47,11 @@ export function AppLayout({ children }: AppLayoutProps) {
               </div>
 
               {/* 컨텐츠 */}
-              <div className="flex flex-1">
-                <div className="w-1/2 border-r border-dashed border-red-400">
+              <div className="flex flex-1 overflow-hidden">
+                <div className="w-1/2 border-r border-dashed border-red-400 overflow-auto">
                   <TabContent position="left" />
                 </div>
-                <div className="w-1/2 border-l border-dashed border-blue-400">
+                <div className="w-1/2 border-l border-dashed border-blue-400 overflow-auto">
                   <TabContent position="right" />
                 </div>
               </div>
@@ -60,7 +60,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             // 단일 레이아웃
             <>
               <TabBar position="left" />
-              <div className="flex-1">
+              <div className="flex-1 overflow-auto">
                 <TabContent position="left" />
               </div>
             </>
