@@ -59,10 +59,13 @@ export function TabBar({ position }: { position: 'left' | 'right' }) {
     const baseStyle = "flex items-center px-2 h-8 rounded-t cursor-pointer border shrink-0 ";
     
     if (isCurrentActive) {
-      return `${baseStyle} bg-white border-solid border-2 border-blue-400 border-b-0`;
+      // border-b-0 제거하고 border-b-blue-400 추가
+      return `${baseStyle} bg-white border-dashed border-2 border-blue-400`;
     } else if (isOtherActive) {
-      return `${baseStyle} bg-white border-solid border border-blue-400 border-b-0`;
+      // border-b-0 제거하고 border-b-blue-400 추가
+      return `${baseStyle} bg-white border-dashed border border-blue-400`;
     } else {
+      // 기존 스타일 유지
       return `${baseStyle} border-dashed border-gray-300 hover:border-gray-400`;
     }
   };
