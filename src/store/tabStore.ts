@@ -136,34 +136,51 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
   },
 
   // 단계 2: 탭 이동 후 활성화
-  moveTabToOtherSide: (tabId: number, fromPosition: 'left' | 'right') => {
-      const toPosition = fromPosition === 'left' ? 'right' as const : 'left' as const;
-      const sourceTabs = fromPosition === 'left' ? get().leftTabs : get().rightTabs;
-      const tabToMove = sourceTabs.find(tab => tab.id === tabId);
+// store/tabStore.ts 수정
+moveTabToOtherSide: (tabId: number, fromPosition: 'left' | 'right') => {
+  const toPosition = fromPosition === 'left' ? 'right' as const : 'left' as const;
+  const sourceTabs = fromPosition === 'left' ? get().leftTabs : get().rightTabs;
+  const tabToMove = sourceTabs.find(tab => tab.id === tabId);
+  
+  if (!tabToMove) return;
+
+  // 이동하는 탭이 현재 활성 탭인 경우, 해당 영역의 새로운 활성 탭을 결정
+  let newSourceActiveId = null;
+  if ((fromPosition === 'left' && tabId === get().activeLeftTabId) || 
+      (fromPosition === 'right' && tabId === get().activeRightTabId)) {
+    // 이동하는 탭을 제외한 남은 탭들
+    const remainingTabs = sourceTabs.filter(t => t.id !== tabId);
+    // 남은 탭이 있으면 마지막 탭을 활성화
+    newSourceActiveId = remainingTabs.length > 0 ? remainingTabs[remainingTabs.length - 1].id : null;
+  }
+
+  // 업데이트된 탭 생성
+  const updatedTab: TabInfo = { ...tabToMove, position: toPosition };
+
+  set(state => {
+    const newState = {
+      // 탭 리스트 업데이트
+      leftTabs: fromPosition === 'left' 
+        ? state.leftTabs.filter(t => t.id !== tabId)
+        : [...state.leftTabs, updatedTab],
+      rightTabs: fromPosition === 'right'
+        ? state.rightTabs.filter(t => t.id !== tabId)
+        : [...state.rightTabs, updatedTab],
       
-      if (!tabToMove) return;
+      // 활성 탭 설정
+      activeLeftTabId: toPosition === 'left' 
+        ? tabId 
+        : (fromPosition === 'left' ? (newSourceActiveId ?? state.activeLeftTabId) : state.activeLeftTabId),
+      activeRightTabId: toPosition === 'right'
+        ? tabId
+        : (fromPosition === 'right' ? (newSourceActiveId ?? state.activeRightTabId) : state.activeRightTabId),
+      
+      isSplit: true
+    };
 
-      // Create updated tab with correct position type
-      const updatedTab: TabInfo = { ...tabToMove, position: toPosition };
-
-      set(state => {
-          const newLeftTabs = fromPosition === 'left' 
-              ? state.leftTabs.filter(t => t.id !== tabId)
-              : [...state.leftTabs, updatedTab];
-          
-          const newRightTabs = fromPosition === 'right'
-              ? state.rightTabs.filter(t => t.id !== tabId)
-              : [...state.rightTabs, updatedTab];
-
-          return {
-              leftTabs: newLeftTabs,
-              rightTabs: newRightTabs,
-              activeLeftTabId: toPosition === 'left' ? tabId : state.activeLeftTabId,
-              activeRightTabId: toPosition === 'right' ? tabId : state.activeRightTabId,
-              isSplit: true
-          };
-      });
-  },
+    return newState;
+  });
+},
 
   // 탭 위치 설정 (필요에 따라 사용)
   setTabPosition: (tabId: number, position: 'left' | 'right') => {
