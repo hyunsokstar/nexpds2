@@ -216,11 +216,11 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
       });
 
       // 분할 상태 해제 및 오른쪽 탭 관련 상태 초기화
-      set(state => ({
+      set({
         isSplit: false,
         rightTabs: [],
         activeRightTabId: null
-      }));
+      });
     } else if (get().leftTabs.length > 0) {
       // 분할되지 않은 상태에서 왼쪽에 탭이 있으면
       // 마지막 탭을 오른쪽으로 이동

@@ -16,6 +16,7 @@ import {
   useSensor,
   useSensors,
   PointerSensor,
+  DragOverEvent,
 } from "@dnd-kit/core";
 
 interface AppLayoutProps {
@@ -59,7 +60,6 @@ export function AppLayout({ children }: AppLayoutProps) {
     })
   );
 
-  // 초기 상태 로드
   useEffect(() => {
     setLeftWidth(getSavedSplitWidth());
     setIsInitialized(true);
@@ -69,7 +69,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     return <>{children}</>;
   }
 
-  const handleResize = (_e: any, _direction: any, ref: HTMLElement) => {
+  const handleResize = (_e: MouseEvent | TouchEvent, _direction: 'top' | 'right' | 'bottom' | 'left' | 'topRight' | 'bottomRight' | 'bottomLeft' | 'topLeft', ref: HTMLElement) => {
     const container = ref.parentElement;
     if (!container) return;
 
@@ -87,36 +87,41 @@ export function AppLayout({ children }: AppLayoutProps) {
     setActiveId(event.active.id as string);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragOver = (event: DragOverEvent) => {
     const { active, over } = event;
-    
     if (!over) return;
 
-    const activeId = active.id as string;
-    const [activePosition, activeTabId] = activeId.split('-');
-
-    // 드롭 가능한 영역의 ID에서 position 추출
-    const overId = over.id as string;
-    const overPosition = overId.split('-')[0];
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+    const [activePosition] = activeId.split('-');
+    const [overPosition] = overId.split('-');
 
     if (activePosition !== overPosition) {
-      // 다른 영역으로 이동 (droppable 영역으로 드롭된 경우)
-      if (overId.endsWith('-droppable')) {
-        moveTabToOtherSide(Number(activeTabId), activePosition as 'left' | 'right');
-      }
-    } else {
-      // 같은 영역 내에서 순서 변경 (탭에 직접 드롭된 경우)
-      const [_, overTabId] = over.id.toString().split('-');
-      if (!overId.endsWith('-droppable')) {
-        reorderTabs(
-          Number(activeTabId),
-          Number(overTabId),
-          activePosition as 'left' | 'right'
-        );
-      }
+      event.active.data.current = {
+        ...event.active.data.current,
+        isOverOtherArea: true,
+      };
     }
+  };
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
     setActiveId(null);
+
+    if (!over) return;
+
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+    const [activePosition, activeTabId] = activeId.split('-');
+    const [overPosition, overTabId] = overId.split('-');
+
+    if (activePosition !== overPosition) {
+      // 다른 영역으로 이동
+      moveTabToOtherSide(Number(activeTabId), activePosition as 'left' | 'right');
+    } else if (!overId.endsWith('-droppable')) {
+      // 같은 영역 내에서 순서 변경
+      reorderTabs(Number(activeTabId), Number(overTabId), activePosition as 'left' | 'right');
+    }
   };
 
   const resizableProps = {
@@ -126,7 +131,6 @@ export function AppLayout({ children }: AppLayoutProps) {
     onResize: handleResize,
   };
 
-  // 초기화 전에는 투명하게 처리
   if (!isInitialized) {
     return (
       <div className="flex flex-col h-screen opacity-0">
@@ -150,6 +154,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <DndContext
               sensors={sensors}
               onDragStart={handleDragStart}
+              onDragOver={handleDragOver}
               onDragEnd={handleDragEnd}
             >
               <div className="flex flex-col flex-1">

@@ -2,13 +2,8 @@ import { X, ArrowLeftRight, ChevronLeft, ChevronRight, MoveLeft, MoveRight } fro
 import { useMenuStore } from "@/store/tabStore";
 import { useRef, useState, useEffect } from "react";
 import {
-  DndContext,
   DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  useSensor,
-  useSensors,
-  PointerSensor,
+  DragOverEvent,
   useDroppable,
 } from "@dnd-kit/core";
 import {
@@ -41,6 +36,7 @@ function DraggableTab({ tab, position, isActive, isOtherActive, onClose, onClick
   } = useSortable({
     id: `${position}-${tab.id}`,
     data: {
+      type: 'tab',
       tab,
       position,
     },
@@ -50,17 +46,19 @@ function DraggableTab({ tab, position, isActive, isOtherActive, onClose, onClick
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
+    position: 'relative' as const,
+    zIndex: isDragging ? 50 : 1,
   };
 
   const getTabClassName = () => {
-    const baseStyle = "flex items-center px-2 h-8 rounded-t cursor-pointer border shrink-0 ";
+    const baseStyle = "flex items-center px-2 h-8 rounded-t cursor-pointer border shrink-0 transition-colors duration-200 ";
     
     if (isActive) {
       return `${baseStyle} bg-white border-dashed border-2 border-blue-400`;
     } else if (isOtherActive) {
       return `${baseStyle} bg-white border-dashed border border-blue-400`;
     } else {
-      return `${baseStyle} border-dashed border-gray-300 hover:border-gray-400`;
+      return `${baseStyle} border-dashed border-gray-300 hover:border-gray-400 hover:bg-gray-50`;
     }
   };
 
@@ -92,19 +90,21 @@ function DraggableTab({ tab, position, isActive, isOtherActive, onClose, onClick
 interface TabBarContainerProps {
   position: 'left' | 'right';
   children: React.ReactNode;
+  isDraggingOver: boolean;
 }
 
-function TabBarContainer({ position, children }: TabBarContainerProps) {
+function TabBarContainer({ position, children, isDraggingOver }: TabBarContainerProps) {
   const { setNodeRef } = useDroppable({
     id: `${position}-droppable`,
-    data: {
-      type: 'tabbar',
-      position,
-    },
   });
 
   return (
-    <div ref={setNodeRef} className="h-full w-full">
+    <div 
+      ref={setNodeRef} 
+      className={`h-full w-full transition-colors duration-200 ${
+        isDraggingOver ? 'bg-blue-50' : ''
+      }`}
+    >
       {children}
     </div>
   );
@@ -117,6 +117,7 @@ interface TabBarProps {
 export function TabBar({ position }: TabBarProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollButtons, setShowScrollButtons] = useState(false);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const { 
     leftTabs, 
@@ -126,6 +127,7 @@ export function TabBar({ position }: TabBarProps) {
     setActiveTab,
     closeTab,
     moveTabToOtherSide,
+    reorderTabs,
     toggleSplit,
     isSplit,
   } = useMenuStore();
@@ -135,8 +137,60 @@ export function TabBar({ position }: TabBarProps) {
   const otherActiveTabId = position === 'left' ? activeRightTabId : activeLeftTabId;
 
   useEffect(() => {
-    setShowScrollButtons(tabs.length >= 6);
+    const updateScrollButtons = () => {
+      if (scrollContainerRef.current) {
+        const { scrollWidth, clientWidth } = scrollContainerRef.current;
+        setShowScrollButtons(scrollWidth > clientWidth);
+      }
+    };
+
+    updateScrollButtons();
+    const resizeObserver = new ResizeObserver(updateScrollButtons);
+    if (scrollContainerRef.current) {
+      resizeObserver.observe(scrollContainerRef.current);
+    }
+
+    return () => resizeObserver.disconnect();
   }, [tabs.length]);
+
+  const handleDragOver = (event: DragOverEvent) => {
+    const { active, over } = event;
+    if (!over) {
+      setIsDraggingOver(false);
+      return;
+    }
+
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+    const [activePosition] = activeId.split('-');
+    
+    // 드래그하는 탭이 현재 영역의 것이 아닐 때만 드래그 오버 효과 표시
+    if (activePosition !== position) {
+      setIsDraggingOver(true);
+    } else {
+      setIsDraggingOver(false);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    setIsDraggingOver(false);
+    
+    if (!over) return;
+
+    const activeId = active.id.toString();
+    const overId = over.id.toString();
+    const [activePosition, activeTabId] = activeId.split('-');
+    const [overPosition, overTabId] = overId.split('-');
+
+    if (activePosition !== overPosition) {
+      // 다른 영역으로 이동
+      moveTabToOtherSide(Number(activeTabId), activePosition as 'left' | 'right');
+    } else if (!overId.endsWith('-droppable')) {
+      // 같은 영역 내에서 탭 순서 변경
+      reorderTabs(Number(activeTabId), Number(overTabId), position);
+    }
+  };
 
   const handleScroll = (direction: 'left' | 'right') => {
     const container = scrollContainerRef.current;
@@ -173,13 +227,24 @@ export function TabBar({ position }: TabBarProps) {
 
     return (
       <div className="flex items-center space-x-1">
-        <button
-          className="p-1 hover:bg-gray-100 rounded"
-          onClick={() => activeTabId && moveTabToOtherSide(activeTabId, 'left')}
-          title="오른쪽으로 이동"
-        >
-          <MoveRight className="w-4 h-4" />
-        </button>
+        {!isSplit && (
+          <button
+            className="p-1 hover:bg-gray-100 rounded"
+            onClick={toggleSplit}
+            title="화면 분할"
+          >
+            <ArrowLeftRight className="w-4 h-4" />
+          </button>
+        )}
+        {isSplit && (
+          <button
+            className="p-1 hover:bg-gray-100 rounded"
+            onClick={() => activeTabId && moveTabToOtherSide(activeTabId, 'left')}
+            title="오른쪽으로 이동"
+          >
+            <MoveRight className="w-4 h-4" />
+          </button>
+        )}
       </div>
     );
   };
@@ -189,8 +254,8 @@ export function TabBar({ position }: TabBarProps) {
   }
 
   return (
-    <TabBarContainer position={position}>
-      <div className="relative w-full h-10">
+    <div className="relative w-full h-10">
+      <TabBarContainer position={position} isDraggingOver={isDraggingOver}>
         <div className="relative border-b px-2 flex items-center justify-between h-10">
           <div className="flex-1 relative flex items-center overflow-hidden">
             {showScrollButtons && (
@@ -246,7 +311,7 @@ export function TabBar({ position }: TabBarProps) {
             {renderControlButtons()}
           </div>
         </div>
-      </div>
-    </TabBarContainer>
+      </TabBarContainer>
+    </div>
   );
 }
