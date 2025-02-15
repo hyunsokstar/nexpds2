@@ -9,7 +9,7 @@ export function SidebarHeader() {
   const activeTabLabel = SIDEBAR_TABS.find(tab => tab.id === activeTab)?.label;
 
   return (
-    <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+    <div className="border-b border-gray-200 flex justify-between items-center h-10 pl-2 pr-5">
       <h2 className="text-lg font-semibold">{activeTabLabel}</h2>
       <div className="flex gap-2">
         <button className="p-1 hover:bg-gray-100 rounded">
