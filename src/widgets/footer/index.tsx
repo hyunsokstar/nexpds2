@@ -11,7 +11,7 @@ const CommonFooter = (props: Props) => {
                 width: '100%',
                 height: 130 // 3줄 기본 높이 (3 * 32px)
             }}
-            minHeight={150}
+            minHeight={133}
             maxHeight={500}
             enable={{ top: true }}
             className="bg-gray-100 border-t"

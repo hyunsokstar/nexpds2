@@ -1,3 +1,4 @@
+// Sidebar.tsx
 "use client";
 
 import React, { useCallback, useState, useEffect } from "react";
@@ -45,7 +46,6 @@ export default function Sidebar() {
     setIsResizing(false);
     document.body.style.cursor = "default";
 
-    // 드래그 거리가 매우 작으면 클릭으로 간주
     const clientX = 'clientX' in e ? e.clientX : e.touches[0].clientX;
     const dragDistance = Math.abs(clientX - resizeStartX);
     if (dragDistance < 5) {
@@ -54,15 +54,15 @@ export default function Sidebar() {
   }, [resizeStartX, toggleSidebar]);
 
   if (!isInitialized) {
-    return <div className="h-[calc(100vh-112px)] opacity-0" />;
+    return <div className="h-full opacity-0" />;
   }
 
   return (
-    <div className="h-[calc(100vh-112px)]">
+    <div className="h-full flex flex-col">
       <Resizable
         size={{
           width: isOpen ? width : 16,
-          height: "100%",
+          height: "auto",
         }}
         minWidth={16}
         maxWidth={480}
@@ -89,7 +89,7 @@ export default function Sidebar() {
         onResizeStart={handleResizeStart}
         onResize={handleResize}
         onResizeStop={handleResizeStop}
-        className="bg-white h-full relative"
+        className="bg-white flex-1 relative overflow-hidden"
         style={{
           transition: isResizing ? "none" : "width 300ms ease-in-out",
         }}
@@ -109,7 +109,6 @@ export default function Sidebar() {
               <div className="flex-1 overflow-hidden">
                 <TabContent />
               </div>
-              <SidebarTabs />
             </>
           )}
         </div>
@@ -121,6 +120,18 @@ export default function Sidebar() {
           `}
         />
       </Resizable>
+
+      {/* 하단 탭 메뉴 */}
+      <div
+        className={`
+          bg-white flex-shrink-0
+          ${isResizing ? "" : "transition-all duration-300 ease-in-out"}
+          ${!isOpen ? "w-16" : ""}
+        `}
+        style={{ width: isOpen ? width : 16 }}
+      >
+        <SidebarTabs />
+      </div>
     </div>
   );
 }
