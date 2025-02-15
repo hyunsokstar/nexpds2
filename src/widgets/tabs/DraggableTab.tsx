@@ -50,7 +50,7 @@ export function DraggableTab({
 
   const getTabClassName = () => {
     const baseStyle =
-      "flex items-center px-2 h-8 rounded-t cursor-pointer border shrink-0 transition-colors duration-200 ";
+      "flex items-center px-2 h-8 rounded-t cursor-pointer border shrink-0 transition-all duration-200 ";
     if (isActive) {
       return `${baseStyle} bg-white border-dashed border-2 border-blue-400`;
     } else if (isOtherActive) {

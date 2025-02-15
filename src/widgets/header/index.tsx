@@ -1,4 +1,3 @@
-// widgets/header/index.tsx
 "use client";
 
 import { useRouter } from "next/navigation";
@@ -7,8 +6,13 @@ import React from "react";
 import { Button } from "@/shared/ui/button";
 import { MenuItemButton } from "@/widgets/header/components/MenuItemButton";
 import { useMenuStore } from "@/store/tabStore";
+import { cn } from "@/lib/utils";
 
-export default function Header() {
+interface HeaderProps {
+  className?: string;
+}
+
+export default function Header({ className }: HeaderProps) {
   const router = useRouter();
 
   // store
@@ -52,7 +56,7 @@ export default function Header() {
   };
 
   return (
-    <div className="w-full z-50">
+    <div className={cn("w-full z-50", className)}>
       {/* 상단 얇은 바 */}
       <div className="header-top bg-[#5BC2C1] h-[28px] flex items-center">
         <div className="px-4 flex justify-between items-center w-full">

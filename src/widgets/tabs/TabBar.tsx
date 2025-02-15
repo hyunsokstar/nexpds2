@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useMenuStore } from "@/store/tabStore";
 import { useRef, useState, useEffect } from "react";
-import { useDroppable } from "@dnd-kit/core";
+import { useDroppable, useDndContext } from "@dnd-kit/core";
 import { SortableContext, horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { DraggableTab } from "./DraggableTab";
 
@@ -23,6 +23,11 @@ export function TabBar({ position }: TabBarProps) {
   const [showScrollButtons, setShowScrollButtons] = useState(false);
   const [showLeftButton, setShowLeftButton] = useState(false);
   const [showRightButton, setShowRightButton] = useState(false);
+
+  const { active } = useDndContext();
+  const { setNodeRef, isOver } = useDroppable({
+    id: `${position}-droppable`,
+  });
 
   const {
     leftTabs,
@@ -41,9 +46,9 @@ export function TabBar({ position }: TabBarProps) {
   const activeTabId = position === "left" ? activeLeftTabId : activeRightTabId;
   const otherActiveTabId = position === "left" ? activeRightTabId : activeLeftTabId;
 
-  const { setNodeRef, isOver } = useDroppable({
-    id: `${position}-droppable`,
-  });
+  const isTabDragging = Boolean(active?.data?.current?.type === 'tab');
+  const isDraggingFromOtherSide = active?.data?.current?.position !== position;
+  const shouldShowHoverEffect = isTabDragging && isDraggingFromOtherSide;
 
   const updateScrollButtons = () => {
     const container = scrollContainerRef.current;
@@ -88,8 +93,10 @@ export function TabBar({ position }: TabBarProps) {
     <div className="w-full h-10 border-b border-gray-300">
       <div
         ref={setNodeRef}
-        className={`h-full w-full flex items-center transition-colors duration-200 ${
-          isOver ? "bg-blue-100 border-blue-400" : "border-gray-300"
+        className={`h-full w-full flex items-center transition-all duration-200 ${
+          shouldShowHoverEffect
+            ? "bg-blue-50 border-2 border-blue-400 shadow-lg" 
+            : "border-gray-300"
         }`}
       >
         {/* 탭 영역 컨테이너 */}
