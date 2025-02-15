@@ -207,7 +207,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </div>
 
       {/* 탭 콘텐츠 영역 */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 ">
         <Resizable
           {...resizableProps}
           size={{ width: `${leftWidth}%`, height: "auto" }}
@@ -253,7 +253,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <Header />
 
       {/* 본문(사이드바 + 탭 컨텐츠) */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1">
         <div className="relative z-20 max-h-full overflow-y-auto border-r">
           <Sidebar />
         </div>

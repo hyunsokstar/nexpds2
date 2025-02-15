@@ -6,35 +6,29 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface SidebarToggleButtonProps {
   isOpen: boolean;
+  className?: string;
   onClick: () => void;
 }
 
-export function SidebarToggleButton({ isOpen, onClick }: SidebarToggleButtonProps) {
+export function SidebarToggleButton({ isOpen, onClick, className }: SidebarToggleButtonProps) {
   return (
-    <div className="absolute right-0 top-0 h-full">
-      {/* 점선 구분선 */}
-      <div className="absolute right-0 top-0 h-full border-r border-dashed border-gray-300" />
-      
-      {/* 토글 버튼 */}
-      <button
-        onClick={onClick}
-        className={cn(
-          "absolute",
-          "top-36", // <-- 여기서 버튼을 더 아래로 내렸습니다.
-          "flex items-center justify-center",
-          "w-4 h-10 bg-white",
-          "border border-gray-200 rounded-r",
-          "hover:bg-gray-50 transition-colors",
-          "focus:outline-none focus:ring-2 focus:ring-gray-200",
-          isOpen ? "-right-4" : "right-0"
-        )}
-      >
-        {isOpen ? (
-          <ChevronLeft className="w-3 h-3 text-gray-400" />
-        ) : (
-          <ChevronRight className="w-3 h-3 text-gray-400" />
-        )}
-      </button>
-    </div>
+    <button
+      onClick={onClick}
+      className={cn(
+        "absolute top-16 right-[-8px]", // 📌 버튼을 경계선 오른쪽으로 이동
+        "w-7 h-9 flex items-center justify-center", // 📌 클릭 영역 확대
+        "bg-white border border-gray-300 rounded-lg shadow-sm",
+        "hover:bg-gray-100 hover:border-gray-400",
+        "transition-all duration-300 ease-in-out",
+        "z-30", // 📌 다른 요소보다 우선 배치
+        className
+      )}
+    >
+      {!isOpen ? (
+        <ChevronRight className="w-5 h-5 text-gray-600" />
+      ) : (
+        <ChevronLeft className="w-5 h-5 text-gray-600" />
+      )}
+    </button>
   );
 }

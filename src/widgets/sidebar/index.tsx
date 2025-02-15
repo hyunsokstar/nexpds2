@@ -3,11 +3,10 @@
 import React, { useCallback, useState, useEffect } from "react";
 import { Resizable } from "re-resizable";
 import { useSidebarStore } from "@/store/useSidebarStore";
-import { debounce } from 'lodash';
-import { SidebarHeader } from './ui/SidebarHeader';
-import { TabContent } from './ui/TabContent';
+import { debounce } from "lodash";
+import { SidebarHeader } from "./ui/SidebarHeader";
+import { TabContent } from "./ui/TabContent";
 import { SidebarToggleButton } from "./ui/SidebarToggleButton";
-import { useSidebarTabStore } from "./model/store";
 import { SidebarTabs } from "./ui/SidebarTabs";
 
 export default function Sidebar() {
@@ -15,6 +14,7 @@ export default function Sidebar() {
   const toggleSidebar = useSidebarStore((state) => state.toggleSidebar);
   const [isResizing, setIsResizing] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const [resizeStartX, setResizeStartX] = useState(0);
 
   useEffect(() => {
     setIsInitialized(true);
@@ -27,20 +27,31 @@ export default function Sidebar() {
     []
   );
 
-  const handleResizeStart = useCallback(() => {
+  const handleResizeStart = useCallback((e: React.MouseEvent<HTMLElement> | React.TouchEvent<HTMLElement>) => {
     setIsResizing(true);
-    document.body.style.cursor = 'ew-resize';
+    setResizeStartX('clientX' in e ? e.clientX : e.touches[0].clientX);
+    document.body.style.cursor = "ew-resize";
   }, []);
 
-  const handleResize = useCallback((_: any, __: any, ref: HTMLElement) => {
-    const newWidth = ref.clientWidth;
-    debouncedSetWidth(newWidth);
-  }, [debouncedSetWidth]);
+  const handleResize = useCallback(
+    (_: any, __: any, ref: HTMLElement) => {
+      const newWidth = ref.clientWidth;
+      debouncedSetWidth(newWidth);
+    },
+    [debouncedSetWidth]
+  );
 
-  const handleResizeStop = useCallback(() => {
+  const handleResizeStop = useCallback((e: MouseEvent | TouchEvent) => {
     setIsResizing(false);
-    document.body.style.cursor = 'default';
-  }, []);
+    document.body.style.cursor = "default";
+
+    // 드래그 거리가 매우 작으면 클릭으로 간주
+    const clientX = 'clientX' in e ? e.clientX : e.touches[0].clientX;
+    const dragDistance = Math.abs(clientX - resizeStartX);
+    if (dragDistance < 5) {
+      toggleSidebar();
+    }
+  }, [resizeStartX, toggleSidebar]);
 
   if (!isInitialized) {
     return <div className="h-[calc(100vh-112px)] opacity-0" />;
@@ -51,13 +62,13 @@ export default function Sidebar() {
       <Resizable
         size={{
           width: isOpen ? width : 16,
-          height: '100%',
+          height: "100%",
         }}
         minWidth={16}
         maxWidth={480}
         enable={{
           top: false,
-          right: isOpen,
+          right: true,
           bottom: false,
           left: false,
           topRight: false,
@@ -67,11 +78,12 @@ export default function Sidebar() {
         }}
         handleStyles={{
           right: {
-            width: '4px',
-            right: '-2px',
-            cursor: 'ew-resize',
-            height: '100%',
-            position: 'absolute',
+            width: "12px",
+            right: "-6px",
+            cursor: "ew-resize",
+            height: "100%",
+            position: "absolute",
+            zIndex: 20,
           },
         }}
         onResizeStart={handleResizeStart}
@@ -79,26 +91,30 @@ export default function Sidebar() {
         onResizeStop={handleResizeStop}
         className="bg-white h-full relative"
         style={{
-          transition: isResizing ? 'none' : 'width 300ms ease-in-out',
+          transition: isResizing ? "none" : "width 300ms ease-in-out",
         }}
       >
         <SidebarToggleButton isOpen={isOpen} onClick={toggleSidebar} />
-        
-        <div 
+
+        <div
           className={`
             h-full flex flex-col
-            ${!isOpen && 'w-0 overflow-hidden'}
-            ${isResizing ? '' : 'transition-all duration-300 ease-in-out'}
+            ${!isOpen && "w-0 overflow-hidden"}
+            ${isResizing ? "" : "transition-all duration-300 ease-in-out"}
           `}
         >
-          <SidebarHeader />
-          <div className="flex-1 overflow-hidden">
-            <TabContent />
-          </div>
-          <SidebarTabs />
+          {isOpen && (
+            <>
+              <SidebarHeader />
+              <div className="flex-1 overflow-hidden">
+                <TabContent />
+              </div>
+              <SidebarTabs />
+            </>
+          )}
         </div>
 
-        <div 
+        <div
           className={`
             absolute top-0 -right-px w-px h-full bg-gray-200
             after:absolute after:inset-0 after:border-r after:border-dashed after:border-gray-300
