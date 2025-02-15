@@ -1,3 +1,4 @@
+// src\widgets\layout\index.tsx
 "use client";
 
 import { useState, useEffect } from "react";

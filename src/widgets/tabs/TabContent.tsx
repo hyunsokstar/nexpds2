@@ -1,4 +1,3 @@
-// widgets/tabs/TabContent.tsx
 "use client";
 
 import { useMenuStore } from "@/store/tabStore";
@@ -7,8 +6,8 @@ import React from "react";
 /** 실제 각 탭별로 표시할 컴포넌트 (임시) */
 function SktComponent() {
   return (
-    <div className="p-4">
-      <div className="flex items-start space-x-4 min-w-[1200px]">
+    <div className="p-4 overflow-auto">
+      <div className="flex items-start space-x-4 w-[1200px]">
         {/* 첫 번째 카드 */}
         <div className="flex-shrink-0 w-80 p-4 bg-white rounded-lg border shadow-sm">
           <h3 className="font-bold mb-2">캠페인 정보</h3>
