@@ -9,9 +9,9 @@ const CommonFooter = (props: Props) => {
         <Resizable
             defaultSize={{
                 width: '100%',
-                height: 96 // 3줄 기본 높이 (3 * 32px)
+                height: 130 // 3줄 기본 높이 (3 * 32px)
             }}
-            minHeight={32}
+            minHeight={150}
             maxHeight={500}
             enable={{ top: true }}
             className="bg-gray-100 border-t"

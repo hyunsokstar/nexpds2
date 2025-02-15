@@ -55,7 +55,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   // 사이드 분할 너비 상태
   const [leftWidth, setLeftWidth] = useState(DEFAULT_SPLIT_WIDTH);
-  // 로컬 스토리지에서 초기 값 로딩이 끝났는지
+  // 로컬 스토리지에서 초기 값 로딩 여부
   const [isInitialized, setIsInitialized] = useState(false);
   // DnD(드래그 앤 드롭) 중인 탭 ID
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -69,13 +69,13 @@ export function AppLayout({ children }: AppLayoutProps) {
     })
   );
 
-  // 페이지 첫 로딩 시, 로컬 스토리지에 저장된 사이드 뷰 너비 로드
+  // 페이지 로딩 시 로컬 스토리지에서 사이드 뷰 너비 로드
   useEffect(() => {
     setLeftWidth(getSavedSplitWidth());
     setIsInitialized(true);
   }, []);
 
-  // 로그인 페이지면 레이아웃 없이 children만
+  // 로그인 페이지인 경우 레이아웃 없이 children만 렌더링
   if (isLoginPage) {
     return <>{children}</>;
   }
@@ -121,7 +121,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     const [activePosition] = activeId.split("-");
     const [overPosition] = overId.split("-");
 
-    // 다른 영역으로 끌려가면 표시
+    // 다른 영역으로 드래그 중이면 데이터에 플래그 추가
     if (activePosition !== overPosition) {
       event.active.data.current = {
         ...event.active.data.current,
@@ -147,7 +147,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         activePosition as "left" | "right"
       );
     }
-    // 같은 영역 내부에서 순서 변경
+    // 같은 영역 내에서 순서 변경 시
     else if (!overId.endsWith("-droppable")) {
       reorderTabs(
         Number(activeTabId),
@@ -165,7 +165,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     onResize: handleResize,
   };
 
-  // 아직 로컬 스토리지 값 로딩 전이면 임시 레이아웃
+  // 로컬 스토리지 로딩 전 임시 레이아웃
   if (!isInitialized) {
     return (
       <div className="flex flex-col min-h-screen">
@@ -176,8 +176,8 @@ export function AppLayout({ children }: AppLayoutProps) {
     );
   }
 
-  // 분할 뷰일 때와 아닐 때 각각 다른 레이아웃
-  const mainContent = isSplit ? (
+  // DndContext로 감싸서 드래그앤드롭 기능을 항상 활성화
+  const mainContent = (
     <DndContext
       sensors={sensors}
       onDragStart={handleDragStart}
@@ -185,46 +185,59 @@ export function AppLayout({ children }: AppLayoutProps) {
       onDragEnd={handleDragEnd}
     >
       {/* 상단 탭 바 영역 */}
-      <div className="flex h-10">
-        <Resizable
-          {...resizableProps}
-          size={{ width: `${leftWidth}%`, height: "auto" }}
-          className="border-r border-dashed border-red-400"
-        >
-          <div className="h-full">
-            <TabBar position="left" />
+      {isSplit ? (
+        <div className="flex h-10">
+          <Resizable
+            {...resizableProps}
+            size={{ width: `${leftWidth}%`, height: "auto" }}
+            className="border-r border-dashed border-red-400"
+          >
+            <div className="h-full">
+              <TabBar position="left" />
+            </div>
+          </Resizable>
+          <div
+            className="border-l border-dashed border-blue-400 h-full"
+            style={{
+              width: `${100 - leftWidth}%`,
+              transition: "width 0ms",
+            }}
+          >
+            <TabBar position="right" />
           </div>
-        </Resizable>
-        <div
-          className="border-l border-dashed border-blue-400 h-full"
-          style={{
-            width: `${100 - leftWidth}%`,
-            transition: "width 0ms",
-          }}
-        >
-          <TabBar position="right" />
         </div>
-      </div>
+      ) : (
+        // 스플릿이 아닐 때도 DndContext 내에서 단일 탭 바 렌더링
+        <div className="flex h-10">
+          <TabBar position="left" />
+        </div>
+      )}
 
       {/* 탭 콘텐츠 영역 */}
-      <div className="flex flex-1 ">
-        <Resizable
-          {...resizableProps}
-          size={{ width: `${leftWidth}%`, height: "auto" }}
-          className="border-r border-dashed border-red-400 overflow-auto"
-        >
-          <TabContent position="left" />
-        </Resizable>
-        <div
-          className="border-l border-dashed border-blue-400 overflow-auto"
-          style={{
-            width: `${100 - leftWidth}%`,
-            transition: "width 0ms",
-          }}
-        >
-          <TabContent position="right" />
+      {isSplit ? (
+        <div className="flex flex-1">
+          <Resizable
+            {...resizableProps}
+            size={{ width: `${leftWidth}%`, height: "auto" }}
+            className="border-r border-dashed border-red-400 overflow-auto"
+          >
+            <TabContent position="left" />
+          </Resizable>
+          <div
+            className="border-l border-dashed border-blue-400 overflow-auto"
+            style={{
+              width: `${100 - leftWidth}%`,
+              transition: "width 0ms",
+            }}
+          >
+            <TabContent position="right" />
+          </div>
         </div>
-      </div>
+      ) : (
+        <div className="flex-1 overflow-auto">
+          <TabContent position="left" />
+        </div>
+      )}
 
       {/* 드래그 오버레이 (드래그 중인 탭 표시) */}
       <DragOverlay>
@@ -237,14 +250,6 @@ export function AppLayout({ children }: AppLayoutProps) {
         ) : null}
       </DragOverlay>
     </DndContext>
-  ) : (
-    // 스플릿이 아닐 때는 단일 탭 바 + 단일 컨텐츠
-    <>
-      <TabBar position="left" />
-      <div className="flex-1 overflow-auto">
-        <TabContent position="left" />
-      </div>
-    </>
   );
 
   return (
@@ -263,7 +268,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {/* 위의 mainContent 렌더링 */}
           <div className="flex flex-col flex-1">{mainContent}</div>
 
-          {/* 푸터. 사이드바와 ‘같은 선상’에서 하단에 위치 */}
+          {/* 푸터. 사이드바와 같은 선상에 하단 배치 */}
           <CommonFooter />
         </div>
       </div>
