@@ -21,6 +21,8 @@ interface TabBarProps {
 export function TabBar({ position }: TabBarProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollButtons, setShowScrollButtons] = useState(false);
+  const [showLeftButton, setShowLeftButton] = useState(false);
+  const [showRightButton, setShowRightButton] = useState(false);
 
   const {
     leftTabs,
@@ -38,26 +40,37 @@ export function TabBar({ position }: TabBarProps) {
   const tabs = position === "left" ? leftTabs : rightTabs;
   const activeTabId = position === "left" ? activeLeftTabId : activeRightTabId;
   const otherActiveTabId = position === "left" ? activeRightTabId : activeLeftTabId;
-  const hasTabs = tabs.length > 0;
 
   const { setNodeRef, isOver } = useDroppable({
     id: `${position}-droppable`,
   });
 
-  useEffect(() => {
-    const updateScrollButtons = () => {
-      if (scrollContainerRef.current) {
-        const { scrollWidth, clientWidth } = scrollContainerRef.current;
-        setShowScrollButtons(scrollWidth > clientWidth);
-      }
-    };
-
-    updateScrollButtons();
-    const resizeObserver = new ResizeObserver(updateScrollButtons);
-    if (scrollContainerRef.current) {
-      resizeObserver.observe(scrollContainerRef.current);
+  const updateScrollButtons = () => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      const { scrollLeft, scrollWidth, clientWidth } = container;
+      setShowLeftButton(scrollLeft > 0);
+      setShowRightButton(scrollLeft < scrollWidth - clientWidth);
+      setShowScrollButtons(scrollWidth > clientWidth);
     }
-    return () => resizeObserver.disconnect();
+  };
+
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) {
+      container.addEventListener('scroll', updateScrollButtons);
+      const resizeObserver = new ResizeObserver(updateScrollButtons);
+      resizeObserver.observe(container);
+
+      return () => {
+        container.removeEventListener('scroll', updateScrollButtons);
+        resizeObserver.disconnect();
+      };
+    }
+  }, []);
+
+  useEffect(() => {
+    updateScrollButtons();
   }, [tabs.length]);
 
   const handleScroll = (direction: "left" | "right") => {
@@ -72,20 +85,37 @@ export function TabBar({ position }: TabBarProps) {
   };
 
   return (
-    <div className="w-full h-10 border-b border-gray-300 pl-2">
+    <div className="w-full h-10 border-b border-gray-300">
       <div
         ref={setNodeRef}
         className={`h-full w-full flex items-center transition-colors duration-200 ${
           isOver ? "bg-blue-100 border-blue-400" : "border-gray-300"
         }`}
       >
-        {/* 탭 목록 영역 */}
-        <div className="flex-1 min-w-0 relative flex items-center">
+        {/* 탭 영역 컨테이너 */}
+        <div className="flex-1 flex items-center min-w-0 relative px-2">
+          {/* 왼쪽 스크롤 버튼 */}
+          {showScrollButtons && (
+            <button
+              className="absolute left-0 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded-full bg-white border"
+              onClick={() => handleScroll("left")}
+              disabled={!showLeftButton}
+              style={{ opacity: showLeftButton ? 1 : 0.5 }}
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+          )}
+
+          {/* 탭 목록 */}
           <div
             ref={scrollContainerRef}
-            className="w-full overflow-x-auto no-scrollbar"
+            className="w-full overflow-x-hidden"
+            style={{
+              marginLeft: showScrollButtons ? '1.5rem' : '0',
+              marginRight: showScrollButtons ? '1.5rem' : '0',
+            }}
           >
-            <div className="flex space-x-2">
+            <div className="flex space-x-1">
               <SortableContext
                 items={tabs.map((tab) => `${position}-${tab.id}`)}
                 strategy={horizontalListSortingStrategy}
@@ -105,21 +135,16 @@ export function TabBar({ position }: TabBarProps) {
             </div>
           </div>
 
+          {/* 오른쪽 스크롤 버튼 */}
           {showScrollButtons && (
-            <>
-              <button
-                className="absolute left-0 top-0 bottom-0 px-1 hover:bg-gray-50 border-r flex items-center bg-white"
-                onClick={() => handleScroll("left")}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <button
-                className="absolute right-0 top-0 bottom-0 px-1 hover:bg-gray-50 border-l flex items-center bg-white"
-                onClick={() => handleScroll("right")}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
-            </>
+            <button
+              className="absolute right-0 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded-full bg-white border"
+              onClick={() => handleScroll("right")}
+              disabled={!showRightButton}
+              style={{ opacity: showRightButton ? 1 : 0.5 }}
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
           )}
         </div>
 
