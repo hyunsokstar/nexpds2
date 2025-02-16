@@ -1,4 +1,3 @@
-// widgets/header/components/MenuItemButton.tsx
 "use client";
 
 import { Check } from "lucide-react";
@@ -11,7 +10,7 @@ interface MenuItemButtonProps {
   title: string;
   isActive: boolean;
   isRegistered: boolean;
-  onClick: () => void;
+  onClick: (e: React.MouseEvent) => void;  // 이벤트 파라미터 추가
 }
 
 export function MenuItemButton({ 
@@ -24,7 +23,7 @@ export function MenuItemButton({
   return (
     <Button
       variant="ghost"
-      onClick={onClick}
+      onClick={onClick}  // 이벤트 객체가 자동으로 전달됨
       className={cn(
         "relative w-[100px] h-[80px] p-2 rounded-lg transition-all",
         "hover:bg-[#E5F3F3] hover:shadow-sm",
@@ -33,7 +32,7 @@ export function MenuItemButton({
         isActive 
           ? "bg-[#5BC2C1] text-white shadow-md border-solid border-[#5BC2C1]" 
           : isRegistered
-            ? "border-dashed border-gray-300 bg-[#E9ECEF]" // 배경색을 더 진하게 변경
+            ? "border-dashed border-gray-300 bg-[#E9ECEF]"
             : "border-dashed border-gray-300",
       )}
     >

@@ -15,7 +15,6 @@ interface HeaderProps {
 export default function Header({ className }: HeaderProps) {
   const router = useRouter();
 
-  // store
   const { 
     activeId, 
     activeLeftTabId, 
@@ -36,22 +35,24 @@ export default function Header({ className }: HeaderProps) {
 
   // 메뉴 아이템이 활성화 상태인지 확인
   const isMenuActive = (menuId: number) => {
-    // 양쪽 영역의 활성 탭 ID와 비교
-    return menuId === activeLeftTabId || menuId === activeRightTabId;
+    // activeId가 직접적으로 현재 메뉴 ID와 일치하는지 확인
+    return activeId === menuId;
   };
 
   // 메뉴 아이템이 탭으로 등록되어 있는지 확인
   const isMenuRegistered = (menuId: number) => {
-    return leftTabs.some(tab => tab.id === menuId) || 
-           rightTabs.some(tab => tab.id === menuId);
+    return leftTabs.some(tab => tab.menuId === menuId) || 
+           rightTabs.some(tab => tab.menuId === menuId);
   };
 
   // 헤더 메뉴 클릭 시
-  const handleMenuClick = (menuId: number) => {
-    setActiveMenu(menuId);
+  const handleMenuClick = (menuId: number, event: React.MouseEvent) => {
     const target = menuItems.find((m) => m.id === menuId);
     if (target) {
-      addOrActivateTab(target);
+      const forceDuplicate = event.ctrlKey;
+      const position = event.ctrlKey ? 'right' : 'left';
+      setActiveMenu(menuId);  // 메뉴 ID를 먼저 활성화
+      addOrActivateTab(target, position, forceDuplicate);
     }
   };
 
@@ -89,7 +90,7 @@ export default function Header({ className }: HeaderProps) {
               title={item.title}
               isActive={isMenuActive(item.id)}
               isRegistered={isMenuRegistered(item.id)}
-              onClick={() => handleMenuClick(item.id)}
+              onClick={(e: React.MouseEvent) => handleMenuClick(item.id, e)}
             />
           ))}
         </nav>
