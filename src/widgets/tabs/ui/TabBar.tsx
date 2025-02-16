@@ -1,3 +1,4 @@
+// widgets/tabs/ui/TabBar.tsx
 "use client";
 
 import {
@@ -124,18 +125,18 @@ export function TabBar({ position }: TabBarProps) {
           >
             <div className="flex space-x-1">
               <SortableContext
-                items={tabs.map((tab) => `${position}-${tab.id}`)}
+                items={tabs.map((tab) => `${position}-${tab.tabId}`)}
                 strategy={horizontalListSortingStrategy}
               >
                 {tabs.map((tab) => (
                   <DraggableTab
-                    key={tab.id}
+                    key={tab.tabId}
                     tab={tab}
                     position={position}
-                    isActive={tab.id === activeTabId}
-                    isOtherActive={tab.id === otherActiveTabId}
+                    isActive={tab.tabId === activeTabId}
+                    isOtherActive={tab.tabId === otherActiveTabId}
                     onClose={(id: number) => closeTab(id, position)}
-                    onClick={() => setActiveTab(tab.id, position)}
+                    onClick={() => setActiveTab(tab.tabId, position)}
                   />
                 ))}
               </SortableContext>
