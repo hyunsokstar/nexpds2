@@ -6,9 +6,7 @@ import { usePathname } from "next/navigation";
 import { Resizable } from "re-resizable";
 import Header from "@/widgets/header";
 import Sidebar from "@/widgets/sidebar"; // ← 사이드바 컴포넌트 (내부에서 Resizable)
-import { TabContent } from "@/widgets/tabs/TabContent";
 import { useMenuStore } from "@/store/tabStore";
-import { TabBar } from "@/widgets/tabs/TabBar";
 import {
   DndContext,
   DragEndEvent,
@@ -20,6 +18,12 @@ import {
   DragOverEvent,
 } from "@dnd-kit/core";
 import CommonFooter from "../footer";
+import { TabBar } from "../tabs/ui/TabBar";
+import { TabContent } from "../tabs/ui/TabContent";
+
+interface TabContentProps {
+  position: "left" | "right";
+}
 
 const SPLIT_WIDTH_KEY = "split-view-width";
 const DEFAULT_SPLIT_WIDTH = 50;
@@ -202,13 +206,15 @@ export function AppLayout({ children }: AppLayoutProps) {
               <TabContent position="left" />
             </div>
           </Resizable>
+          {/* 오른쪽 패널 수정 */}
           <div
             style={{
               width: `${100 - leftWidth}%`,
               transition: "width 0ms",
             }}
-            className="border-l border-dashed border-blue-400"
+            className="border-l border-dashed border-blue-400 h-full"
           >
+            {/* 여기도 h-full overflow-auto 추가 */}
             <div className="h-full overflow-auto">
               <TabContent position="right" />
             </div>

@@ -1,5 +1,5 @@
-import { TabBar } from "../tabs/TabBar";
-import { TabContent } from "../tabs/TabContent";
+import { TabBar } from "../tabs/ui/TabBar";
+import { TabContent } from "../tabs/ui/TabContent";
 
 export function SplitLayout() {
     return (
