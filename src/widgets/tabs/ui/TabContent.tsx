@@ -12,13 +12,14 @@ export function TabContent({ position }: TabContentProps) {
 
   const activeTabId = position === 'left' ? activeLeftTabId : activeRightTabId;
   const tabs = position === 'left' ? leftTabs : rightTabs;
-  const activeTab = tabs.find((t) => t.id === activeTabId);
+  const activeTab = tabs.find((t) => t.tabId === activeTabId);  // tabId로 찾기
 
   if (!activeTab) {
     return <div className="p-4">열린 탭이 없습니다.</div>;
   }
 
-  switch (activeTab.id) {
+  // menuId로 분기
+  switch (activeTab.menuId) {
     case 1: // [1] DEFAULT
       return <CampaignGroupAdminPannel />;
     case 2: // 예: [2] SKT

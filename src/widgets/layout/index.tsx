@@ -21,10 +21,6 @@ import CommonFooter from "../footer";
 import { TabBar } from "../tabs/ui/TabBar";
 import { TabContent } from "../tabs/ui/TabContent";
 
-interface TabContentProps {
-  position: "left" | "right";
-}
-
 const SPLIT_WIDTH_KEY = "split-view-width";
 const DEFAULT_SPLIT_WIDTH = 50;
 
