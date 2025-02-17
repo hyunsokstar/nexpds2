@@ -9,7 +9,8 @@ export interface TabInfo {
   menuId: number;            // 메뉴 ID (같은 메뉴여도 중복 탭 가능한 경우)
   title: string;
   icon?: string;
-  position: 'left' | 'right';
+  position: 'left' | 'right' | 'upper' | 'lower';
+
   originalPosition: 'left' | 'right'; // 탭이 처음 생성된 위치
 }
 
@@ -29,13 +30,45 @@ interface MenuStore {
   nextTabId: number;                 // 새 탭 생성 시 ID를 증가시켜 사용
 
   // 탭 조작 메서드
-  addOrActivateTab: (menu: MenuItem, position?: 'left' | 'right', forceDuplicate?: boolean) => void;
+  addOrActivateTab: (menu: MenuItem, position?: 'left' | 'right' | 'upper' | 'lower', forceDuplicate?: boolean) => void;
   closeTab: (tabId: number, position: 'left' | 'right') => void;
   setActiveTab: (tabId: number, position: 'left' | 'right') => void;
   moveTabToOtherSide: (tabId: number, fromPosition: 'left' | 'right') => void;
   setTabPosition: (tabId: number, position: 'left' | 'right') => void;
   toggleSplit: () => void;
   reorderTabs: (activeTabId: number, overTabId: number, position: 'left' | 'right') => void;
+
+  isQuadSplit: boolean;         // 4분할 모드 여부
+  upperTabs: TabInfo[];         // 상단 탭 리스트
+  lowerTabs: TabInfo[];         // 하단 탭 리스트
+  activeUpperTabId: number | null;  // 상단 활성 탭 ID
+  activeLowerTabId: number | null;  // 하단 활성 탭 ID
+
+  // 새로운 메서드
+  enterQuadSplit: () => void;   // 4분할 모드 진입
+  exitQuadSplit: () => void;    // 4분할 모드 해제
+
+}
+
+// 헬퍼 함수들
+const getTabArrayKey = (position: string) => {
+  switch (position) {
+    case 'upper': return 'upper';
+    case 'lower': return 'lower';
+    case 'left': return 'left';
+    case 'right': return 'right';
+    default: return 'left';
+  }
+}
+
+const getActiveIdKey = (position: string) => {
+  switch (position) {
+    case 'upper': return 'Upper';
+    case 'lower': return 'Lower';
+    case 'left': return 'Left';
+    case 'right': return 'Right';
+    default: return 'Left';
+  }
 }
 
 export const useMenuStore = create<MenuStore>((set, get) => ({
@@ -60,10 +93,82 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
   isSplit: false,
   nextTabId: 1, // 새 탭ID 발급용
 
-  // ----- 탭 기능 메서드 -----
-  addOrActivateTab: (menu: MenuItem, position = 'left', forceDuplicate = false) => {
+  // 새로운 상태들
+  isQuadSplit: false,
+  upperTabs: [],
+  lowerTabs: [],
+  activeUpperTabId: null,
+  activeLowerTabId: null,
+
+  // 4분할 관련 메서드들
+  enterQuadSplit: () => {
     const { leftTabs, rightTabs } = get();
-    const currentTabs = position === 'left' ? leftTabs : rightTabs;
+    const allTabs = [...leftTabs, ...rightTabs];
+
+    if (allTabs.length !== 4) return;
+
+    // 상단에 2개, 하단에 2개 배치
+    const upperTabs = allTabs.slice(0, 2).map(tab => ({
+      ...tab,
+      position: 'upper' as const
+    }));
+
+    const lowerTabs = allTabs.slice(2, 4).map(tab => ({
+      ...tab,
+      position: 'lower' as const
+    }));
+
+    set({
+      isQuadSplit: true,
+      leftTabs: [],
+      rightTabs: [],
+      upperTabs,
+      lowerTabs,
+      activeLeftTabId: null,
+      activeRightTabId: null,
+      activeUpperTabId: upperTabs[0]?.tabId || null,
+      activeLowerTabId: lowerTabs[0]?.tabId || null,
+      activeId: upperTabs[0]?.menuId || null
+    });
+  },
+
+  exitQuadSplit: () => {
+    const { upperTabs, lowerTabs } = get();
+    const allTabs = [...upperTabs, ...lowerTabs];
+
+    // 원래 위치로 되돌리기
+    const leftTabs = allTabs.map(tab => ({
+      ...tab,
+      position: tab.originalPosition
+    })).filter(tab => tab.originalPosition === 'left');
+
+    const rightTabs = allTabs.map(tab => ({
+      ...tab,
+      position: tab.originalPosition
+    })).filter(tab => tab.originalPosition === 'right');
+
+    set({
+      isQuadSplit: false,
+      upperTabs: [],
+      lowerTabs: [],
+      activeUpperTabId: null,
+      activeLowerTabId: null,
+      leftTabs,
+      rightTabs,
+      activeLeftTabId: leftTabs[0]?.tabId || null,
+      activeRightTabId: rightTabs[0]?.tabId || null,
+      activeId: leftTabs[0]?.menuId || null
+    });
+  },
+
+  // addOrActivateTab 메서드 수정
+  addOrActivateTab: (menu: MenuItem, position = 'left', forceDuplicate = false) => {
+    // 현재 탭 목록 가져오기
+    const currentTabs =
+      position === 'upper' ? get().upperTabs :
+        position === 'lower' ? get().lowerTabs :
+          position === 'left' ? get().leftTabs :
+            get().rightTabs;
 
     // 1) 강제 중복(CTRL+클릭) 또는 메뉴 자체가 duplicatable=true => 무조건 새 탭 생성
     if (forceDuplicate || menu.duplicatable) {
@@ -75,15 +180,27 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
         title: menu.title,
         icon: menu.icon,
         position,
-        originalPosition: position
+        originalPosition: position === 'upper' || position === 'lower' ? 'left' : position
       };
-      set((state) => ({
-        [`${position}Tabs`]: [...currentTabs, newTab],
-        [`active${position === 'left' ? 'Left' : 'Right'}TabId`]: newTabId,
-        activeId: menu.id,
-        isSplit: position === 'right' ? true : state.isSplit,
-        nextTabId: state.nextTabId + 1,
-      }));
+
+      set((state) => {
+        const updateObj: any = {
+          [`${getTabArrayKey(position)}Tabs`]: [...currentTabs, newTab],
+          [`active${getActiveIdKey(position)}TabId`]: newTabId,
+          activeId: menu.id,
+          nextTabId: state.nextTabId + 1,
+        };
+
+        // 분할 상태 업데이트
+        if (position === 'right' || position === 'lower') {
+          updateObj.isSplit = true;
+        }
+        if (position === 'upper' || position === 'lower') {
+          updateObj.isQuadSplit = true;
+        }
+
+        return updateObj;
+      });
       return;
     }
 
@@ -99,20 +216,31 @@ export const useMenuStore = create<MenuStore>((set, get) => ({
         title: menu.title,
         icon: menu.icon,
         position,
-        originalPosition: position
+        originalPosition: position === 'upper' || position === 'lower' ? 'left' : position
       };
 
-      set((state) => ({
-        [`${position}Tabs`]: [...currentTabs, newTab],
-        [`active${position === 'left' ? 'Left' : 'Right'}TabId`]: newTabId,
-        activeId: menu.id,
-        isSplit: position === 'right' ? true : state.isSplit,
-        nextTabId: state.nextTabId + 1,
-      }));
+      set((state) => {
+        const updateObj: any = {
+          [`${getTabArrayKey(position)}Tabs`]: [...currentTabs, newTab],
+          [`active${getActiveIdKey(position)}TabId`]: newTabId,
+          activeId: menu.id,
+          nextTabId: state.nextTabId + 1,
+        };
+
+        // 분할 상태 업데이트
+        if (position === 'right' || position === 'lower') {
+          updateObj.isSplit = true;
+        }
+        if (position === 'upper' || position === 'lower') {
+          updateObj.isQuadSplit = true;
+        }
+
+        return updateObj;
+      });
     } else {
       // 이미 있으면 활성화만
       set({
-        [`active${position === 'left' ? 'Left' : 'Right'}TabId`]: existTab.tabId,
+        [`active${getActiveIdKey(position)}TabId`]: existTab.tabId,
         activeId: menu.id
       });
     }
