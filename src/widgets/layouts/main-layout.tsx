@@ -1,10 +1,10 @@
-// src\widgets\layouts\main-layout.tsx
 'use client'
 
 import TabContainer from '@/widgets/tab-container'
 import Sidebar from '@/widgets/sidebar'
 import { useTabSelectors } from '@/features/tabs/store/useTabStore'
 import Header from '../header'
+import Footer from '../footer'
 
 export default function MainLayout({
   children,
@@ -32,6 +32,9 @@ export default function MainLayout({
               {children}
             </main>
           )}
+          
+          {/* Footer */}
+          <Footer />
         </div>
       </div>
     </div>
