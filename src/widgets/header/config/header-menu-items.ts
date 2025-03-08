@@ -1,4 +1,4 @@
-// src/widgets/main-layout/config/menu-items.ts
+// src\widgets\header\config\header-menu-items.ts
 import CallStatus from '@/shared/panels/CallStatus';
 import CampaignGroup from '@/shared/panels/CampaignGroup';
 import CampaignHistory from '@/shared/panels/CampaignHistory';
