@@ -1,3 +1,4 @@
+// src\features\tabs\index.tsx
 import { Tab, useTabStore } from './store/useTabStore';
 
 export { useTabStore } from './store/useTabStore';

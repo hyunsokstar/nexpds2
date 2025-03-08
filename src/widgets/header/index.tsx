@@ -3,11 +3,14 @@
 import Link from 'next/link'
 import { Settings } from 'lucide-react'
 import { MainMenuItems } from './config/header-menu-items'
-import { useTabActions } from '@/features/tabs'
+import { useTabActions, useTabStore } from '@/features/tabs'
 
 export function Header() {
   // 탭 액션 가져오기
   const { openTab } = useTabActions()
+  // 현재 활성화된 탭 ID 가져오기
+  const activeTabId = useTabStore(state => state.activeTabId)
+  const tabs = useTabStore(state => state.tabs)
 
   // 메뉴 항목 클릭 시 탭 추가 핸들러
   const handleMenuClick = (item: typeof MainMenuItems[0]) => {
@@ -18,6 +21,11 @@ export function Header() {
       component: item.component,
       closable: true
     })
+  }
+
+  // 특정 ID의 탭이 열려 있는지 확인
+  const isTabOpen = (id: string) => {
+    return tabs.some(tab => tab.id === id)
   }
 
   return (
@@ -45,20 +53,38 @@ export function Header() {
           <div className="flex flex-1 justify-start space-x-3">
             {MainMenuItems.map((item) => {
               const Icon = item.icon;
+              const isActive = activeTabId === item.id;
+              const isOpen = isTabOpen(item.id);
 
               return (
                 <button
                   key={item.id}
-                  className="group flex flex-col items-center justify-between h-14 px-2 py-1.5 border border-dashed border-transparent hover:border-gray-300 rounded-sm transition-colors relative"
+                  className={`
+                    group flex flex-col items-center justify-between h-14 px-2 py-1.5 
+                    ${isOpen 
+                      ? 'border border-teal-200 bg-teal-50/50 rounded-sm' 
+                      : 'border border-dashed border-transparent hover:border-gray-300 rounded-sm'
+                    }
+                    ${isActive ? 'bg-teal-50' : ''}
+                    transition-colors relative
+                  `}
                   onClick={() => handleMenuClick(item)}
                 >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-sm bg-gray-50 group-hover:bg-gray-100">
+                  <div className={`
+                    flex h-7 w-7 items-center justify-center rounded-sm
+                    ${isActive || isOpen ? 'bg-teal-100' : 'bg-gray-50 group-hover:bg-gray-100'}
+                  `}>
                     <Icon
                       size={16}
-                      className="text-gray-600 group-hover:text-teal-500"
+                      className={`
+                        ${isActive || isOpen ? 'text-teal-600' : 'text-gray-600 group-hover:text-teal-500'}
+                      `}
                     />
                   </div>
-                  <span className="text-xs mt-1 text-gray-600 group-hover:text-teal-500">
+                  <span className={`
+                    text-xs mt-1 
+                    ${isActive || isOpen ? 'text-teal-600 font-medium' : 'text-gray-600 group-hover:text-teal-500'}
+                  `}>
                     {item.name}
                   </span>
                 </button>

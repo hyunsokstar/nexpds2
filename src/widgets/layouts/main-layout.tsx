@@ -1,3 +1,4 @@
+// src\widgets\layouts\main-layout.tsx
 'use client'
 
 import TabContainer from '@/widgets/tab-container'

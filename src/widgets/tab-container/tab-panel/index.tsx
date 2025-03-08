@@ -1,3 +1,4 @@
+// src\widgets\tab-container\tab-panel\index.tsx
 'use client'
 
 import React from 'react';

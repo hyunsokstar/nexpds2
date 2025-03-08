@@ -1,3 +1,5 @@
+// src\features\tabs\store\useTabStore.ts
+
 import { create } from 'zustand';
 import { LucideIcon } from 'lucide-react';
 
