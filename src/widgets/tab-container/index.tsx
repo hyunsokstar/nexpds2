@@ -3,7 +3,7 @@
 import React from 'react'
 import { useTabSelectors } from '@/features/tabs/store/useTabStore'
 import TabBar from './tab-bar'
-import TabPanel from './tab-content'
+import TabPanel from './tab-panel'
 
 interface TabContainerProps {
   className?: string
